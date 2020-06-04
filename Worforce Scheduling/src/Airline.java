@@ -24,12 +24,7 @@ public class Airline extends Agent{
 		try {
 			
 			jade.core.Runtime runtime = jade.core.Runtime.instance();
-			Profile profile = new ProfileImpl();
-			profile.setParameter(Profile.MAIN_HOST, "127.0.0.1");
-			profile.setParameter(Profile.MAIN_PORT, profile.LOCAL_PORT);
-			profile.setParameter(Profile.PLATFORM_ID, "DKJAH");
-			
-			container = runtime.createMainContainer(profile);
+			container = runtime.createAgentContainer(new ProfileImpl());
 			
 			System.out.println("Airline started...");
 			
