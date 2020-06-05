@@ -1,10 +1,13 @@
 import java.util.HashMap;
 
 import jade.core.Agent;
-import jade.core.Profile;
-import jade.core.ProfileImpl;
 
 public class CustomerServiceAgent extends Agent{
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	
 	private String name;
 	private double coorX;
@@ -12,7 +15,7 @@ public class CustomerServiceAgent extends Agent{
 	private boolean actA;
 	private boolean actB;
 	private boolean actC;
-	HashMap<String, Boolean> days = new HashMap<String, Boolean>();
+	private HashMap<String, Boolean> days = new HashMap<String, Boolean>();
 	
 	@Override
 	protected void setup() {
