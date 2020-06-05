@@ -12,11 +12,14 @@ public class Chromosome implements Serializable{
 	
 	public void InitChromosome() {
 		//TODO: Generate random solution
+		int contSchedules = 0;
 		solution = new float [7][7];
-		/*
-		 * [00:00 - 23:30]
-		 * 
-		 * */
+		//For each day generate a random configuration
+		for(int i= 0; i < 7; i++) {
+			while(contSchedules<7) {
+				//Generate pseudo-randoms
+			}
+		}
 	}
 
 	public float[][] getSolution() {
