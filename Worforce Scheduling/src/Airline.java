@@ -12,7 +12,7 @@ public class Airline extends Agent{
 
 	private static final long serialVersionUID = 1L;
 	private ContainerController container;
-
+	private AirlineGUI myInterface;
 	@Override
 	protected void setup() {
 
@@ -48,5 +48,6 @@ public class Airline extends Agent{
 		} catch (StaleProxyException e) {
 			System.out.println("StaleProxyException: " + e.getMessage());
 		}
+		myInterface = new AirlineGUI(this);
 	}
 }

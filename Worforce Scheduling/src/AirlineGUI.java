@@ -1,6 +1,10 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
@@ -13,7 +17,10 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 
-public class AirlineGUI extends JPanel {
+import jade.core.Agent;
+
+
+public class AirlineGUI extends JPanel implements WindowListener{
 
 	private static final long serialVersionUID = 1L;
 	
@@ -27,9 +34,11 @@ public class AirlineGUI extends JPanel {
 	private JTextField txtFuncionObjetivoBienestar;
 	private JScrollPane barraArrastre;
 	private JTable tblAgentes;
+	private Agent myAgent;
 	
-	public AirlineGUI() {
+	public AirlineGUI(Agent a) {
 		
+		myAgent = a;
 		menu = new JFrame();
 		menu.getContentPane().setBackground(Color.WHITE);
 		menu.setSize(700, 600);
@@ -115,13 +124,52 @@ public class AirlineGUI extends JPanel {
 		menu.getContentPane().add(this);
 		menu.setResizable(false);
 		menu.setVisible(true);
-	}
-	
-	
-	public static void main(String[] args) {
-
-		new AirlineGUI();
 		
 	}
+
+	@Override
+	public void windowActivated(WindowEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowClosed(WindowEvent arg0) {
+		// TODO Auto-generated method stub
+		myAgent.doDelete();
+		
+	}
+
+	@Override
+	public void windowClosing(WindowEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowDeactivated(WindowEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowDeiconified(WindowEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowIconified(WindowEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowOpened(WindowEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
 
 }

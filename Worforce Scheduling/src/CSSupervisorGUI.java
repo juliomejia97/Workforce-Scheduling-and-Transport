@@ -1,6 +1,8 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
@@ -13,6 +15,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
+
+import jade.core.Agent;
 
 public class CSSupervisorGUI extends JPanel {
 
@@ -35,9 +39,10 @@ public class CSSupervisorGUI extends JPanel {
 	private JScrollPane barraArrastre;
 	private JTable tblAgentes;
 	private JButton btnGenetic;
-	
-	public CSSupervisorGUI() {
+	private CustomerServiceSupervisor myAgent;
+	public CSSupervisorGUI(CustomerServiceSupervisor a) {
 		
+		myAgent = a;
 		menu = new JFrame();
 		menu.getContentPane().setBackground(Color.WHITE);
 		menu.setSize(700, 600);
@@ -158,13 +163,21 @@ public class CSSupervisorGUI extends JPanel {
 		menu.getContentPane().add(this);
 		menu.setResizable(false);
 		menu.setVisible(true);
-	}
-	
-	
-	public static void main(String[] args) {
-
-		new CSSupervisorGUI();
 		
+		//Listers and behaviours
+		btnGenetic.addActionListener(new ActionListener() {
+			
+			public void actionPerformed(ActionEvent e) {
+				int population = Integer.parseInt(txtPopulationSize.getText().trim());
+				int maxIter = Integer.parseInt(txtMaximumIterations.getText().trim());
+				float crossOver = Float.parseFloat(txtCrossProbability.getText().trim());
+				float elit = Float.parseFloat(txtElitismPercentage.getText().trim());
+				float mutation = Float.parseFloat(txtMutationProbability.getText().trim());
+				float threashold = Float.parseFloat(txtUmbral.getText().trim());
+				myAgent.InitiateGenetic(population, maxIter, mutation, crossOver, elit, threashold);
+			}
+		});
 	}
+	
 
 }
