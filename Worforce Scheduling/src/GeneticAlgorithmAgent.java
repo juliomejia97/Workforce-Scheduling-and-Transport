@@ -1,6 +1,7 @@
 import java.util.HashMap;
 
 import jade.core.Agent;
+import jade.lang.acl.ACLMessage;
 
 public class GeneticAlgorithmAgent extends Agent{
 	
@@ -24,6 +25,11 @@ public class GeneticAlgorithmAgent extends Agent{
 		demand = (HashMap<String, Integer>) args[4];
 		
 		System.out.println(demand.get("Mar 02:30"));
+		
+		/*
+		ACLMessage mess = new ACLMessage(ACLMessage.REQUEST);
+		mess.setContentObject((Object) object);
+		*/
 
 	}
 
