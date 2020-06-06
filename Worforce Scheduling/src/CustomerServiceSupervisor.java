@@ -3,6 +3,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.time.LocalTime;
 import java.util.HashMap;
 
 import jade.core.AID;
@@ -23,10 +24,10 @@ public class CustomerServiceSupervisor extends Agent{
 
 	private static final long serialVersionUID = 1L;
 	
-	private HashMap<String, Integer> actA = new HashMap<String, Integer>();
-	private HashMap<String, Integer> actB = new HashMap<String, Integer>();
-	private HashMap<String, Integer> actC = new HashMap<String, Integer>();
-	private HashMap<String, Integer> totalDemand = new HashMap<String, Integer>();
+	private HashMap<Dia, Integer> actA = new HashMap<Dia, Integer>();
+	private HashMap<Dia, Integer> actB = new HashMap<Dia, Integer>();
+	private HashMap<Dia, Integer> actC = new HashMap<Dia, Integer>();
+	private HashMap<Dia, Integer> totalDemand = new HashMap<Dia, Integer>();
 	private CSSupervisorGUI myGui;
 	private int population;
 	private float mutationRate;
@@ -47,8 +48,13 @@ public class CustomerServiceSupervisor extends Agent{
 			while(line != null) {
 				String [] data = line.split(";");
 				String hour = data[0].trim();
+				String[] daySplit = hour.split(" ");
+				String day = daySplit[0].trim();
+				String[] hora = daySplit[1].split(":");
+				LocalTime franja = LocalTime.of(Integer.parseInt(hora[0]), Integer.parseInt(hora[1]));
 				int demand = Integer.parseInt(data[1].trim());
-				this.actA.put(hour, demand);
+				Dia classDia = new Dia(day, franja);
+				this.actA.put(classDia, demand);
 				line = br.readLine();
 			}
 			
@@ -60,8 +66,13 @@ public class CustomerServiceSupervisor extends Agent{
 			while(line != null) {
 				String [] data = line.split(";");
 				String hour = data[0].trim();
+				String[] daySplit = hour.split(" ");
+				String day = daySplit[0].trim();
+				String[] hora = daySplit[1].split(":");
+				LocalTime franja = LocalTime.of(Integer.parseInt(hora[0]), Integer.parseInt(hora[1]));
 				int demand = Integer.parseInt(data[1].trim());
-				this.actB.put(hour, demand);
+				Dia classDia = new Dia(day, franja);
+				this.actB.put(classDia, demand);
 				line = br.readLine();
 			}
 			
@@ -73,8 +84,13 @@ public class CustomerServiceSupervisor extends Agent{
 			while(line != null) {
 				String [] data = line.split(";");
 				String hour = data[0].trim();
+				String[] daySplit = hour.split(" ");
+				String day = daySplit[0].trim();
+				String[] hora = daySplit[1].split(":");
+				LocalTime franja = LocalTime.of(Integer.parseInt(hora[0]), Integer.parseInt(hora[1]));
 				int demand = Integer.parseInt(data[1].trim());
-				this.actC.put(hour, demand);
+				Dia classDia = new Dia(day, franja);
+				this.actC.put(classDia, demand);
 				line = br.readLine();
 			}
 			
@@ -86,8 +102,13 @@ public class CustomerServiceSupervisor extends Agent{
 			while(line != null) {
 				String [] data = line.split(";");
 				String hour = data[0].trim();
+				String[] daySplit = hour.split(" ");
+				String day = daySplit[0].trim();
+				String[] hora = daySplit[1].split(":");
+				LocalTime franja = LocalTime.of(Integer.parseInt(hora[0]), Integer.parseInt(hora[1]));
 				int demand = Integer.parseInt(data[1].trim());
-				this.totalDemand.put(hour, demand);
+				Dia classDia = new Dia(day, franja);
+				this.totalDemand.put(classDia, demand);
 				line = br.readLine();
 			}
 			
