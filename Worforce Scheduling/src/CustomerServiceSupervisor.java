@@ -26,6 +26,7 @@ public class CustomerServiceSupervisor extends Agent{
 	private HashMap<String, Integer> actA = new HashMap<String, Integer>();
 	private HashMap<String, Integer> actB = new HashMap<String, Integer>();
 	private HashMap<String, Integer> actC = new HashMap<String, Integer>();
+	private HashMap<String, Integer> totalDemand = new HashMap<String, Integer>();
 	private CSSupervisorGUI myGui;
 	private int population;
 	private float mutationRate;
@@ -79,6 +80,19 @@ public class CustomerServiceSupervisor extends Agent{
 			
 			br.close();
 			
+			br = new BufferedReader(new FileReader(new File("./TotalDemand.csv")));
+			line = br.readLine();
+			
+			while(line != null) {
+				String [] data = line.split(";");
+				String hour = data[0].trim();
+				int demand = Integer.parseInt(data[1].trim());
+				this.totalDemand.put(hour, demand);
+				line = br.readLine();
+			}
+			
+			br.close();
+			
 			myGui = new CSSupervisorGUI(this);
 			System.out.println("Supervisor started...");
 			//Subscribing the agent to the AMS Agent and Yellow Pages
@@ -119,7 +133,7 @@ public class CustomerServiceSupervisor extends Agent{
 				threshold = threas;
 				container = getContainerController();
 				AgentController ac;
-				Object[] args = {population, mutationRate, crossoverRate, elitRate};
+				Object[] args = {population, mutationRate, crossoverRate, elitRate, totalDemand};
 				//TODO: Initiate the GA with the two SubAgents
 				for(int i=0; i < 2; i++) {
 					try {
