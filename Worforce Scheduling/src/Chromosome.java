@@ -1,32 +1,40 @@
 import java.io.Serializable;
+import java.util.ArrayList;
 
 public class Chromosome implements Serializable{
-	private float solution[][];
+	private Dia solution[][];
 	private double FO;
 	private double fitness;
 	private float fatherRate;
+	private ArrayList<ArrayList<Dia>> opcions;
 	
-	public Chromosome() {
+	public Chromosome(ArrayList<ArrayList<Dia>> pOpcions) {
+		opcions = pOpcions;
 		InitChromosome();
 	}
 	
 	public void InitChromosome() {
 		//TODO: Generate random solution
 		int contSchedules = 0;
-		solution = new float [7][7];
+		solution = new Dia [7][7];
+		ArrayList<Boolean> estado;
+		ArrayList<Dia> actual;
 		//For each day generate a random configuration
 		for(int i= 0; i < 7; i++) {
+			actual = opcions.get(i);
+			estado = new ArrayList<Boolean>(actual.size());
 			while(contSchedules<7) {
-				//Generate pseudo-randoms
+				//Generate randoms bettewen 0 - array.size()
+				
 			}
 		}
 	}
 
-	public float[][] getSolution() {
+	public Dia[][] getSolution() {
 		return solution;
 	}
 
-	public void setSolution(float[][] solution) {
+	public void setSolution(Dia[][] solution) {
 		this.solution = solution;
 	}
 
