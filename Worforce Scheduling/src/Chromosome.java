@@ -1,40 +1,31 @@
 import java.io.Serializable;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Random;
+
+import jade.util.leap.HashMap;
 
 public class Chromosome implements Serializable{
-	private Dia solution[][];
+	private ArrayList<Double> solution;
+	private ArrayList<String[][]> timesolts;
 	private double FO;
 	private double fitness;
 	private float fatherRate;
-	private ArrayList<ArrayList<Dia>> opcions;
 	
-	public Chromosome(ArrayList<ArrayList<Dia>> pOpcions) {
-		opcions = pOpcions;
-		InitChromosome();
-	}
-	
-	public void InitChromosome() {
-		//TODO: Generate random solution
-		int contSchedules = 0;
-		solution = new Dia [7][7];
-		ArrayList<Boolean> estado;
-		ArrayList<Dia> actual;
-		//For each day generate a random configuration
-		for(int i= 0; i < 7; i++) {
-			actual = opcions.get(i);
-			estado = new ArrayList<Boolean>(actual.size());
-			while(contSchedules<7) {
-				//Generate randoms bettewen 0 - array.size()
-				
-			}
+	public Chromosome(int numAgents) {
+		//Initialize the chromosome
+		solution = new ArrayList<Double>();
+		timesolts = new ArrayList<String[][]>(numAgents);
+		for(int i=0; i < numAgents; i++) {
+			solution.add(generateRandom());
 		}
 	}
 
-	public Dia[][] getSolution() {
+	public ArrayList<Double> getSolution(){
 		return solution;
 	}
 
-	public void setSolution(Dia[][] solution) {
+	public void setSolution(ArrayList<Double> solution) {
 		this.solution = solution;
 	}
 
@@ -62,5 +53,21 @@ public class Chromosome implements Serializable{
 		this.fatherRate = fatherRate;
 	}
 	
-	
+	public static double generateRandom(){
+		Random rand = new Random();
+		int upperbound = 49;
+		int lowestbound = 0;
+		int range = upperbound - lowestbound;
+		double number = rand.nextDouble() * range;
+		double shifted = number + lowestbound;
+		return roundTwoDecimals(shifted,2);
+	}
+	public static double roundTwoDecimals(double value,int places) {
+		if (places < 0) throw new IllegalArgumentException();
+
+	    long factor = (long) Math.pow(10, places);
+	    value = value * factor;
+	    long tmp = Math.round(value);
+	    return (double) tmp / factor;
+	}
 }
