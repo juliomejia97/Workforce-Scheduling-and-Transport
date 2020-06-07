@@ -193,6 +193,7 @@ public class CustomerServiceAgent extends Agent{
 				}
 				 ACLMessage reply = msg.createReply();
 				 reply.setPerformative(ACLMessage.INFORM);
+				 reply.setConversationId("report-option");
 				 Object info[] = {chr, config};
 		    	try {
 					reply.setContentObject(info);
@@ -201,7 +202,7 @@ public class CustomerServiceAgent extends Agent{
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-		    	 myAgent.send(reply);
+		    	myAgent.send(reply);
 		    	
 		      
 		      }else {

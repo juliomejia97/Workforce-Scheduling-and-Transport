@@ -185,6 +185,7 @@ public class CustomerServiceSupervisor extends Agent{
 
 	private class GeneticAlgorithm extends Behaviour {
 		private int step = 0;
+		private int repliesCnt;
 		private MessageTemplate mt; // The template to receive replies
 		@Override
 		public void action() {
@@ -204,6 +205,7 @@ public class CustomerServiceSupervisor extends Agent{
 					enviarHora(serviceAgents[i]);
 				}
 				step = 2;
+				repliesCnt = 0;
 				break;
 			case 2:
 				//recibir configuraciones
@@ -217,19 +219,20 @@ public class CustomerServiceSupervisor extends Agent{
 			    	  try {
 						info = (Object[]) reply.getContentObject();
 					} catch (UnreadableException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 			    	  chrom = (int) info[0];
 			    	  config = (String[][]) info[1];
-			    	  System.out.println(chrom+"*******");
+			    	  repliesCnt++;
+			    	  if(repliesCnt >= serviceAgents.length*population) {
+			    		  System.out.println("Entro");
+			    	  }
+			    	  System.out.println(repliesCnt);
 			      }
 			      else {
 			    	  System.out.println("blocked");
 			        block();
 			      }
-			      
-			      System.out.println("********************");
 				break;
 			case 3:
 				//Calcular FO
@@ -264,11 +267,9 @@ public class CustomerServiceSupervisor extends Agent{
 			idAgent = Integer.parseInt(agente.getName().split(" ")[1].split("@")[0]) - 1;
 			for(int i=0; i < chromosomes.size();i++) {
 				cfp.setContent(i+" "+chromosomes.get(i).getSolution().get(idAgent));
-				cfp.setReplyWith("cfp"+System.currentTimeMillis()); // Unique value
 				myAgent.send(cfp);
-				
 				mt = MessageTemplate.and(MessageTemplate.MatchConversationId("report-option"),
-                        MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+						MessageTemplate.MatchPerformative(ACLMessage.INFORM));
 			}
 		}
 	}
