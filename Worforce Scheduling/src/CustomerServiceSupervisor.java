@@ -3,14 +3,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
-
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.ProfileImpl;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -18,9 +14,7 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.UnreadableException;
-import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
-import jade.wrapper.StaleProxyException;
 import jade.core.behaviours.*;
 
 public class CustomerServiceSupervisor extends Agent{
@@ -28,10 +22,10 @@ public class CustomerServiceSupervisor extends Agent{
 
 	private static final long serialVersionUID = 1L;
 
-	private HashMap<Dia, Integer> actA = new HashMap<Dia, Integer>();
-	private HashMap<Dia, Integer> actB = new HashMap<Dia, Integer>();
-	private HashMap<Dia, Integer> actC = new HashMap<Dia, Integer>();
-	private HashMap<Dia, Integer> totalDemand = new HashMap<Dia, Integer>();
+	private HashMap<String, Integer> actA = new HashMap<String, Integer>();
+	private HashMap<String, Integer> actB = new HashMap<String, Integer>();
+	private HashMap<String, Integer> actC = new HashMap<String, Integer>();
+	private HashMap<String, Integer> totalDemand = new HashMap<String, Integer>();
 	private CSSupervisorGUI myGui;
 	private int population;
 	private float mutationRate;
@@ -53,13 +47,8 @@ public class CustomerServiceSupervisor extends Agent{
 			while(line != null) {
 				String [] data = line.split(";");
 				String hour = data[0].trim();
-				String[] daySplit = hour.split(" ");
-				String day = daySplit[0].trim();
-				String[] hora = daySplit[1].split(":");
-				LocalTime franja = LocalTime.of(Integer.parseInt(hora[0]), Integer.parseInt(hora[1]));
 				int demand = Integer.parseInt(data[1].trim());
-				Dia classDia = new Dia(day, franja);
-				this.actA.put(classDia, demand);
+				this.actA.put(hour, demand);
 				line = br.readLine();
 			}
 
@@ -71,13 +60,8 @@ public class CustomerServiceSupervisor extends Agent{
 			while(line != null) {
 				String [] data = line.split(";");
 				String hour = data[0].trim();
-				String[] daySplit = hour.split(" ");
-				String day = daySplit[0].trim();
-				String[] hora = daySplit[1].split(":");
-				LocalTime franja = LocalTime.of(Integer.parseInt(hora[0]), Integer.parseInt(hora[1]));
 				int demand = Integer.parseInt(data[1].trim());
-				Dia classDia = new Dia(day, franja);
-				this.actB.put(classDia, demand);
+				this.actB.put(hour, demand);
 				line = br.readLine();
 			}
 
@@ -89,13 +73,8 @@ public class CustomerServiceSupervisor extends Agent{
 			while(line != null) {
 				String [] data = line.split(";");
 				String hour = data[0].trim();
-				String[] daySplit = hour.split(" ");
-				String day = daySplit[0].trim();
-				String[] hora = daySplit[1].split(":");
-				LocalTime franja = LocalTime.of(Integer.parseInt(hora[0]), Integer.parseInt(hora[1]));
 				int demand = Integer.parseInt(data[1].trim());
-				Dia classDia = new Dia(day, franja);
-				this.actC.put(classDia, demand);
+				this.actC.put(hour, demand);
 				line = br.readLine();
 			}
 
@@ -107,13 +86,8 @@ public class CustomerServiceSupervisor extends Agent{
 			while(line != null) {
 				String [] data = line.split(";");
 				String hour = data[0].trim();
-				String[] daySplit = hour.split(" ");
-				String day = daySplit[0].trim();
-				String[] hora = daySplit[1].split(":");
-				LocalTime franja = LocalTime.of(Integer.parseInt(hora[0]), Integer.parseInt(hora[1]));
 				int demand = Integer.parseInt(data[1].trim());
-				Dia classDia = new Dia(day, franja);
-				this.totalDemand.put(classDia, demand);
+				this.totalDemand.put(hour, demand);
 				line = br.readLine();
 			}
 
@@ -125,7 +99,6 @@ public class CustomerServiceSupervisor extends Agent{
 			DFAgentDescription dfd = new DFAgentDescription();
 			dfd.setName(getAID());
 			//Offering different services
-			//TODO: Look for other services that the agent offers
 			ServiceDescription sd = new ServiceDescription();
 			sd.setType("report-schedule");
 			sd.setName("JADE-scheduling");
@@ -160,8 +133,6 @@ public class CustomerServiceSupervisor extends Agent{
 				threshold = threas;
 				container = getContainerController();
 				chromosomes = new ArrayList<Chromosome>();
-				//TODO: Initiate the GeneticAlgorithm
-				// TODO Obtener la lista de agentes de servicio al cliente que existen en el sistema
 				DFAgentDescription template = new DFAgentDescription();
 				ServiceDescription sd = new ServiceDescription();
 				sd.setType("report-timeslot");
@@ -186,6 +157,7 @@ public class CustomerServiceSupervisor extends Agent{
 	private class GeneticAlgorithm extends Behaviour {
 		private int step = 0;
 		private int repliesCnt;
+		private Chromosome bestChromosome = new Chromosome(-1, 0);
 		private MessageTemplate mt; // The template to receive replies
 		@Override
 		public void action() {
@@ -193,6 +165,7 @@ public class CustomerServiceSupervisor extends Agent{
 			switch (step) {
 			case 0:
 				//Initiate the population
+				bestChromosome.setFO(100000000);
 				for(int i=0; i <population;i++) {
 					Chromosome chromosome = new Chromosome(i, serviceAgents.length);
 					chromosomes.add(chromosome);
@@ -241,16 +214,19 @@ public class CustomerServiceSupervisor extends Agent{
 			case 3:
 				//Calcular FO
 				System.out.println("Calculating the objective function of each chromosome...");
-				block();
 				for(Chromosome actual: chromosomes) {
-					//PASARLE POR PARAMETRO LOS TRES HM DE DEMANDA
-					//CREAR UN METODO EN CHOROMOSOME LLAMADO CALCULAR FO
-					//CREA TRES HM AUXILIARES, SE CALCULA LA FO Y SE GUARDA LA SOLUCION EN EL ATRIBUTO FO
-					//SE RECUPERA EL VALOR DE CADA FO Y SE VA GUARDANDO EL MEJOR CHROMOSOME (MENOR FO)
-					//STEP = 4
+					actual.calculateSchedulingFO(actA, actB, actC);
+					System.out.println("Finished calculating the OF of Chromosome: " + actual.getId() + " FO: " + actual.getFO());
+					double currentFO = actual.getFO();
+					if(currentFO < bestChromosome.getFO()) {
+						bestChromosome = actual;
+					}
 				}
+				step = 4;
 				break;
 			case 4:
+				System.out.println("The best solution of first generation is chromosome: " + bestChromosome.getId() + " with a FO of: " + bestChromosome.getFO());
+				block();
 				//Cruces
 				break;
 			case 5:
@@ -268,7 +244,6 @@ public class CustomerServiceSupervisor extends Agent{
 
 		@Override
 		public boolean done() {
-			// TODO Auto-generated method stub
 			return false;
 		}
 

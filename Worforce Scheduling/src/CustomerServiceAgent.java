@@ -127,7 +127,7 @@ public class CustomerServiceAgent extends Agent{
 				config = new String[7][2];
 				date = getHour(hour);
 				selection = opcions.get(position);
-				for(Map.Entry<String, Boolean> actual:days.entrySet()) {
+				for(Map.Entry<String, Boolean> actual: days.entrySet()) {
 					String key = actual.getKey();
 					Boolean value = actual.getValue();
 					switch (key) {
@@ -213,7 +213,11 @@ public class CustomerServiceAgent extends Agent{
 			  String select;
 			  select = "";
 			  int entero = hour / 2;
-			  select = select + entero ;
+			  if(entero < 10) {
+				  select = "0" + select + entero ;
+			  }else {
+				  select = select + entero ;
+			  }
 			  if(hour%2!=0) {
 				  select = select + ":30";
 			  }else {
