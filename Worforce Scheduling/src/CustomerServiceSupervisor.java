@@ -213,6 +213,7 @@ public class CustomerServiceSupervisor extends Agent{
 				break;
 			case 3:
 				//Calcular FO
+				//FALTAN ALMUERZOS, DUPLICAR LOS MARTES Y MIERCOLES DE LA SEGUNDA SEMANA Y VER BIEN LA PARTE DEL 25.
 				System.out.println("Calculating the objective function of each chromosome...");
 				for(Chromosome actual: chromosomes) {
 					actual.calculateSchedulingFO(actA, actB, actC);
