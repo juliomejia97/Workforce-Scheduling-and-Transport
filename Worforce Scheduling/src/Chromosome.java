@@ -71,7 +71,7 @@ public class Chromosome implements Serializable{
 				}
 			}
 		}
-		
+
 		for(Map.Entry<String, Integer> actA: a.entrySet()) {
 			String day = actA.getKey().split(" ")[0];
 			LocalTime time = LocalTime.of(Integer.parseInt(actA.getKey().split(" ")[1].split(":")[0]), Integer.parseInt(actA.getKey().split(" ")[1].split(":")[1]));
@@ -91,7 +91,7 @@ public class Chromosome implements Serializable{
 				this.FO += actA.getValue();
 			}
 		}
-		
+
 		for(Map.Entry<String, Integer> actB: b.entrySet()) {
 			String day = actB.getKey().split(" ")[0];
 			LocalTime time = LocalTime.of(Integer.parseInt(actB.getKey().split(" ")[1].split(":")[0]), Integer.parseInt(actB.getKey().split(" ")[1].split(":")[1]));
@@ -111,7 +111,7 @@ public class Chromosome implements Serializable{
 				this.FO += actB.getValue();
 			}
 		}
-		
+
 		for(Map.Entry<String, Integer> actC: c.entrySet()) {
 			String day = actC.getKey().split(" ")[0];
 			LocalTime time = LocalTime.of(Integer.parseInt(actC.getKey().split(" ")[1].split(":")[0]), Integer.parseInt(actC.getKey().split(" ")[1].split(":")[1]));
@@ -131,27 +131,28 @@ public class Chromosome implements Serializable{
 				this.FO += actC.getValue();
 			}
 		}
+
+		for(Map.Entry<String, Integer> maxAct: max.entrySet()) {
+			int mayor = 0;
+			
+			mayor += a.get(maxAct.getKey());
+
+			mayor += b.get(maxAct.getKey());
+
+
+			mayor += b.get(maxAct.getKey());
+
+			maxAct.setValue(mayor);
+		}
 		
-//		for(Map.Entry<String, Integer> maxAct: max.entrySet()) {
-//			int mayor = 0;
-//			if(a.get(maxAct.getKey()) > mayor) {
-//				mayor = a.get(maxAct.getKey());
-//			}
-//			if(b.get(maxAct.getKey()) > mayor) {
-//				mayor = b.get(maxAct.getKey());
-//			}
-//			if(c.get(maxAct.getKey()) > mayor) {
-//				mayor = b.get(maxAct.getKey());
-//			}
-//			maxAct.setValue(mayor);
-//		}
-//		
-//		for(Map.Entry<String, Integer> maxAct: max.entrySet()) {
-//			maxValue += maxAct.getValue();
-//		}
-//		
-//		this.FO += (maxValue * 25);
-		
+		for(Map.Entry<String, Integer> maxAct: max.entrySet()) {
+			if(maxAct.getValue()>maxValue) {
+				maxValue = maxAct.getValue();
+			}
+		}
+
+		this.FO += (maxValue * 25);
+
 	}
 
 	public HashMap<String, String> getTimeSlotsAgent(String initialHour, String permutation) {
@@ -203,7 +204,7 @@ public class Chromosome implements Serializable{
 		labor.put(next.toString(), fourthAct);
 		next = next.plusMinutes(30);
 		labor.put(next.toString(), fourthAct);
-		
+
 		return labor;
 
 	}
