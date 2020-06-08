@@ -26,6 +26,7 @@ public class CustomerServiceSupervisor extends Agent{
 	private HashMap<String, Integer> actB = new HashMap<String, Integer>();
 	private HashMap<String, Integer> actC = new HashMap<String, Integer>();
 	private HashMap<String, Integer> totalDemand = new HashMap<String, Integer>();
+	private HashMap<String, String> breaks = new HashMap<String, String>();
 	private CSSupervisorGUI myGui;
 	private int population;
 	private float mutationRate;
@@ -88,6 +89,19 @@ public class CustomerServiceSupervisor extends Agent{
 				String hour = data[0].trim();
 				int demand = Integer.parseInt(data[1].trim());
 				this.totalDemand.put(hour, demand);
+				line = br.readLine();
+			}
+
+			br.close();
+			
+			br = new BufferedReader(new FileReader(new File("./Breaks.csv")));
+			line = br.readLine();
+
+			while(line != null) {
+				String [] data = line.split(";");
+				String init = data[0].trim();
+				String pause = data[1].trim();
+				this.breaks.put(init, pause);
 				line = br.readLine();
 			}
 
