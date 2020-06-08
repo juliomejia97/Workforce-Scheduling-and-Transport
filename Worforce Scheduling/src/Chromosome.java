@@ -73,15 +73,63 @@ public class Chromosome implements Serializable{
 		}
 		
 		for(Map.Entry<String, Integer> actA: a.entrySet()) {
-			this.FO += actA.getValue();
+			String day = actA.getKey().split(" ")[0];
+			LocalTime time = LocalTime.of(Integer.parseInt(actA.getKey().split(" ")[1].split(":")[0]), Integer.parseInt(actA.getKey().split(" ")[1].split(":")[1]));
+			if(day.equalsIgnoreCase("Mar")) {
+				if(time.compareTo(LocalTime.of(2, 0)) > 0) {
+					this.FO += (actA.getValue() * 2);
+				}else {
+					this.FO += actA.getValue();
+				}
+			} else if(day.equalsIgnoreCase("Mie")) {
+				if(time.compareTo(LocalTime.of(6, 0)) < 0) {
+					this.FO += (actA.getValue() * 2);
+				}else {
+					this.FO += actA.getValue();
+				}
+			} else {
+				this.FO += actA.getValue();
+			}
 		}
 		
 		for(Map.Entry<String, Integer> actB: b.entrySet()) {
-			this.FO += actB.getValue();
+			String day = actB.getKey().split(" ")[0];
+			LocalTime time = LocalTime.of(Integer.parseInt(actB.getKey().split(" ")[1].split(":")[0]), Integer.parseInt(actB.getKey().split(" ")[1].split(":")[1]));
+			if(day.equalsIgnoreCase("Mar")) {
+				if(time.compareTo(LocalTime.of(2, 0)) > 0) {
+					this.FO += (actB.getValue() * 2);
+				}else {
+					this.FO += actB.getValue();
+				}
+			} else if(day.equalsIgnoreCase("Mie")) {
+				if(time.compareTo(LocalTime.of(6, 0)) < 0) {
+					this.FO += (actB.getValue() * 2);
+				}else {
+					this.FO += actB.getValue();
+				}
+			} else {
+				this.FO += actB.getValue();
+			}
 		}
 		
 		for(Map.Entry<String, Integer> actC: c.entrySet()) {
-			this.FO += actC.getValue();
+			String day = actC.getKey().split(" ")[0];
+			LocalTime time = LocalTime.of(Integer.parseInt(actC.getKey().split(" ")[1].split(":")[0]), Integer.parseInt(actC.getKey().split(" ")[1].split(":")[1]));
+			if(day.equalsIgnoreCase("Mar")) {
+				if(time.compareTo(LocalTime.of(2, 0)) > 0) {
+					this.FO += (actC.getValue() * 2);
+				}else {
+					this.FO += actC.getValue();
+				}
+			} else if(day.equalsIgnoreCase("Mie")) {
+				if(time.compareTo(LocalTime.of(6, 0)) < 0) {
+					this.FO += (actC.getValue() * 2);
+				}else {
+					this.FO += actC.getValue();
+				}
+			} else {
+				this.FO += actC.getValue();
+			}
 		}
 		
 //		for(Map.Entry<String, Integer> maxAct: max.entrySet()) {
@@ -210,7 +258,7 @@ public class Chromosome implements Serializable{
 
 	public static double generateRandom(){
 		Random rand = new Random();
-		double upperbound = 47.999999;
+		double upperbound = 47;
 		int lowestbound = 0;
 		double range = upperbound - lowestbound;
 		double number = rand.nextDouble() * range;
