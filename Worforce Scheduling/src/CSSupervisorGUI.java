@@ -3,20 +3,11 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Vector;
-
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.table.DefaultTableModel;
-
-import jade.core.Agent;
 
 public class CSSupervisorGUI extends JPanel {
 
@@ -36,8 +27,8 @@ public class CSSupervisorGUI extends JPanel {
 	private JTextField txtMutationProbability;
 	private JTextField txtElitismPercentage;
 	private JTextField txtUmbral;
-	private JScrollPane barraArrastre;
-	private JTable tblAgentes;
+//	private JScrollPane barraArrastre;
+//	private JTable tblAgentes;
 	private JButton btnGenetic;
 	private CustomerServiceSupervisor myAgent;
 	public CSSupervisorGUI(CustomerServiceSupervisor a) {
@@ -45,17 +36,15 @@ public class CSSupervisorGUI extends JPanel {
 		myAgent = a;
 		menu = new JFrame();
 		menu.getContentPane().setBackground(Color.WHITE);
-		menu.setSize(700, 600);
+		menu.setSize(700, 400);
 		menu.setTitle("Scheduler Genetic Algorithm");
 		menu.getContentPane().setLayout(new BorderLayout());
 		menu.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-		String[] dataHeader = {"Tuesday", "Wendsday", "Thurdsday", "Friday", "Saturday", "Sunday", "Monday"};
-		Vector<String> header = new Vector<String>(Arrays.asList(dataHeader));
-		Vector<String> view = new Vector<String>();
-		Vector<List<String>> agentData = new Vector<List<String>>();
-		
-		
+//		String[] dataHeader = {"Tuesday", "Wendsday", "Thurdsday", "Friday", "Saturday", "Sunday", "Monday"};
+//		Vector<String> header = new Vector<String>(Arrays.asList(dataHeader));
+//		Vector<String> view = new Vector<String>();
+//		Vector<List<String>> agentData = new Vector<List<String>>();
 		setBackground(Color.BLACK);
 		setSize(700, 600);
 		setLayout(null);
@@ -139,26 +128,25 @@ public class CSSupervisorGUI extends JPanel {
 		btnGenetic.setBounds(270, 300, 150, 26);
 		add(btnGenetic);
 		
-				
 		//PRUEBA
-		for(int i = 0; i < 8; i++) {
-			view = new Vector<String>();
-			view.add("");
-			view.add("");
-			view.add("");
-			view.add("");
-			view.add("");
-			view.add("");
-			view.add("");
-			agentData.add(view);
-		}
-		
-		barraArrastre = new JScrollPane();
-		barraArrastre.setBounds(18, 350, 650, 150);
-		add(barraArrastre);
-		tblAgentes = new JTable();
-		barraArrastre.setViewportView(tblAgentes);
-		tblAgentes.setModel(new DefaultTableModel(agentData, header));
+//		for(int i = 0; i < 8; i++) {
+//			view = new Vector<String>();
+//			view.add("");
+//			view.add("");
+//			view.add("");
+//			view.add("");
+//			view.add("");
+//			view.add("");
+//			view.add("");
+//			agentData.add(view);
+//		}
+//		
+//		barraArrastre = new JScrollPane();
+//		barraArrastre.setBounds(18, 350, 650, 150);
+//		add(barraArrastre);
+//		tblAgentes = new JTable();
+//		barraArrastre.setViewportView(tblAgentes);
+//		tblAgentes.setModel(new DefaultTableModel(agentData, header));
 		
 		menu.getContentPane().add(this);
 		menu.setResizable(false);

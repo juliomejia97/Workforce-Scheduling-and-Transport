@@ -194,7 +194,7 @@ public class CustomerServiceSupervisor extends Agent{
 			case 0:
 				//Initiate the population
 				for(int i=0; i <population;i++) {
-					Chromosome chromosome = new Chromosome(serviceAgents.length);
+					Chromosome chromosome = new Chromosome(i, serviceAgents.length);
 					chromosomes.add(chromosome);
 				}
 				step = 1;
@@ -211,31 +211,44 @@ public class CustomerServiceSupervisor extends Agent{
 				//recibir configuraciones
 				//Armar una matriz o hashmap copia con los resultados
 				ACLMessage reply = myAgent.receive(mt);
-				
-			      if (reply != null) {
-			    	  int chrom;
-			    	  Object[] info = null;
-			    	  String[][] config = new String[7][2];
-			    	  try {
+
+				if (reply != null) {
+					int chrom;
+					Object[] info = null;
+					String[][] config = new String[7][2];
+					try {
 						info = (Object[]) reply.getContentObject();
 					} catch (UnreadableException e) {
 						e.printStackTrace();
 					}
-			    	  chrom = (int) info[0];
-			    	  config = (String[][]) info[1];
-			    	  repliesCnt++;
-			    	  if(repliesCnt >= serviceAgents.length*population) {
-			    		  System.out.println("Entro");
-			    	  }
-			    	  System.out.println(repliesCnt);
-			      }
-			      else {
-			    	  System.out.println("blocked");
-			        block();
-			      }
+					chrom = (int) info[0];
+					config = (String[][]) info[1];
+					int idAgent = Integer.parseInt(reply.getSender().getName().split(" ")[1].split("@")[0]) - 1;
+					chromosomes.get(chrom).setSolutionToTimeslots(idAgent, config);
+					repliesCnt++;
+					if(repliesCnt == serviceAgents.length * population) {
+						System.out.println("Total messages received from agents: " + repliesCnt);
+						for(Chromosome actual: chromosomes) {
+							System.out.println("Chromosome: " + actual.getId() + " has " + actual.getTimesolts().size() + " solutions");
+						}
+						step = 3;
+					}
+				}
+				else {
+					block();
+				}
 				break;
 			case 3:
 				//Calcular FO
+				System.out.println("Calculating the objective function of each chromosome...");
+				block();
+				for(Chromosome actual: chromosomes) {
+					//PASARLE POR PARAMETRO LOS TRES HM DE DEMANDA
+					//CREAR UN METODO EN CHOROMOSOME LLAMADO CALCULAR FO
+					//CREA TRES HM AUXILIARES, SE CALCULA LA FO Y SE GUARDA LA SOLUCION EN EL ATRIBUTO FO
+					//SE RECUPERA EL VALOR DE CADA FO Y SE VA GUARDANDO EL MEJOR CHROMOSOME (MENOR FO)
+					//STEP = 4
+				}
 				break;
 			case 4:
 				//Cruces

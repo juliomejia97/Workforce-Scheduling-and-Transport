@@ -1,23 +1,25 @@
 import java.io.Serializable;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Random;
 
-import jade.util.leap.HashMap;
-
 public class Chromosome implements Serializable{
+
+	private static final long serialVersionUID = 1L;
 	private ArrayList<Double> solution;
 	private ArrayList<String[][]> timesolts;
+	private int id;
 	private double FO;
 	private double fitness;
 	private float fatherRate;
 	
-	public Chromosome(int numAgents) {
+	public Chromosome(int id, int numAgents) {
 		//Initialize the chromosome
-		solution = new ArrayList<Double>();
-		timesolts = new ArrayList<String[][]>(numAgents);
+		this.id = id;
+		this.solution = new ArrayList<Double>();
+		this.timesolts = new ArrayList<String[][]>();
 		for(int i=0; i < numAgents; i++) {
-			solution.add(generateRandom());
+			this.timesolts.add(new String[7][2]);
+			this.solution.add(generateRandom());
 		}
 	}
 
@@ -47,6 +49,22 @@ public class Chromosome implements Serializable{
 
 	public float getFatherRate() {
 		return fatherRate;
+	}
+	
+	public ArrayList<String[][]> getTimesolts() {
+		return timesolts;
+	}
+
+	public void setSolutionToTimeslots(int pos, String[][] sol) {
+		this.timesolts.set(pos, sol);
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
 	}
 
 	public void setFatherRate(float fatherRate) {
