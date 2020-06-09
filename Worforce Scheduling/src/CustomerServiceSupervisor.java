@@ -135,7 +135,7 @@ public class CustomerServiceSupervisor extends Agent{
 			System.out.println("IOException: " + e.getMessage());
 		}
 	}
-	
+
 	public int getPopulation() {
 		return population;
 	}
@@ -183,7 +183,7 @@ public class CustomerServiceSupervisor extends Agent{
 	public void setMaxIteration(int maxIteration) {
 		this.maxIteration = maxIteration;
 	}
-	
+
 	public CSSupervisorGUI getMyGui() {
 		return myGui;
 	}
@@ -288,12 +288,12 @@ public class CustomerServiceSupervisor extends Agent{
 					repliesCnt++;
 					if(!firstIteration) {
 						if(repliesCnt == serviceAgents.length * population) {
-							System.out.println("Total messages received from agents: " + repliesCnt);
+							//System.out.println("Total messages received from agents: " + repliesCnt);
 							step = 3;
 						}
 					}else {
 						if(repliesCnt == expectedReplies) {
-							System.out.println("Total messages received from agents: " + repliesCnt);
+							//System.out.println("Total messages received from agents: " + repliesCnt);
 							step = 6;
 						}
 					}
@@ -340,54 +340,63 @@ public class CustomerServiceSupervisor extends Agent{
 				Random rand = new Random();
 				iterations++;
 				if(iterations == maxIteration) {
+					System.out.println("Finished iterating...");
 					step = 7;
-				}
-				System.out.println("Starting generation " + iterations + "...");
-				for(Chromosome actual: chromosomes) {
-					if (!actual.isFoCalculated()) actual.calculateSchedulingFO(actA, actB, actC, breaks);
-				}
-				//Sort by the fitness of each chromosome (High to low)
-				Collections.sort(chromosomes, (a, b) -> a.getFitness() > b.getFitness() ? 1 : -1);
+					
+				} else {
+					
+					System.out.println("Starting generation " + iterations + "...");
+					for(Chromosome actual: chromosomes) {
+						if (!actual.isFoCalculated()) actual.calculateSchedulingFO(actA, actB, actC, breaks);
+					}
 
-				//Create the first new generation with the elitism rate and population
-				for(int i = 0; i < elit; i++) {
-					newGeneration.add(chromosomes.get(i));
-				}
-								
-				//Initiate sec generation and booleans
-				for(int i = elit; i < population; i++) {
-					auxGeneration.add(chromosomes.get(i));
-					auxBoolean.add(false);
-				}
-								
-				//Create the second new generation with the elitism rate, population and rand function
-				int range = population - elit;
-				for(int i = elit; i < population; i++) {
-					boolean diff = false;
-					while(!diff) {
-						int pos = rand.nextInt(range);
-						if(!auxBoolean.get(pos)) {
-							diff = true;
-							auxBoolean.set(pos, true);
-							newGeneration.add(auxGeneration.get(pos));
+					//Sort by the fitness of each chromosome (High to low)
+					Collections.sort(chromosomes, (a, b) -> a.getFitness() >= b.getFitness() ? 1 : -1);
+
+					//Create the first new generation with the elitism rate and population
+					for(int i = 0; i < elit; i++) {
+						newGeneration.add(chromosomes.get(i));
+					}
+
+					//Initiate sec generation and booleans
+					for(int i = elit; i < population; i++) {
+						auxGeneration.add(chromosomes.get(i));
+						auxBoolean.add(false);
+					}
+
+					//Create the second new generation with the elitism rate, population and rand function
+					int range = population - elit;
+					for(int i = elit; i < population; i++) {
+						boolean diff = false;
+						while(!diff) {
+							int pos = rand.nextInt(range);
+							if(!auxBoolean.get(pos)) {
+								diff = true;
+								auxBoolean.set(pos, true);
+								newGeneration.add(auxGeneration.get(pos));
+							}
 						}
 					}
+					chromosomes.clear();
+					for(int i = 0; i < newGeneration.size(); i++) {
+						chromosomes.add(newGeneration.get(i));
+					}
+					
+					step = 4;
 				}
-				
-				System.out.println("Size of new generation: " + newGeneration.size());
-				chromosomes.clear();
-				chromosomes = newGeneration;
-				System.out.println("Size of new Chromosome: " + chromosomes.size());
+
+				break;
+
+			case 7:
+				System.out.println("Iterations and genetic algorithm terminated...");
 				block();
-				step = 4;
-				
 				break;
 			}
 		}
 
 		@Override
 		public boolean done() {
-			return step == 7;
+			return false;
 		}
 
 		public void enviarHora(AID agente) {
