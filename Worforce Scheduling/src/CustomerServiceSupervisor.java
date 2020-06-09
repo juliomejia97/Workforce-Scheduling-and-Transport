@@ -280,6 +280,10 @@ public class CustomerServiceSupervisor extends Agent{
 			case 6:
 				//Nueva generación y verificar las iteraciones
 				System.out.println("Voy a hacer una nueva generacion perris");
+				for(Chromosome actual: chromosomes) {
+					if (!actual.isFoCalculated()) actual.calculateSchedulingFO(actA, actB, actC, breaks);
+				}
+				//TODO: 
 				block();
 				break;
 			default:
