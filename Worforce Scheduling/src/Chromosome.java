@@ -10,26 +10,31 @@ public class Chromosome implements Serializable{
 	private static final long serialVersionUID = 1L;
 	private ArrayList<Double> solution;
 	private ArrayList<String[][]> timesolts;
+	private ArrayList<Integer> genoma;
 	private int id;
 	private double FO;
 	private double fitness;
-	private float fatherRate;
-
-	public Chromosome(int id, int numAgents) {
-
-		this.id = id;
+	private double fatherRate;
+	private boolean foCalculated;
+	public Chromosome(int numAgents) {
+		Random rand = new Random();
+		int int_random;
 		this.FO = 0;
 		this.fitness = 0;
 		this.fatherRate = 0;
+		setFoCalculated(false);
 		this.solution = new ArrayList<Double>();
 		this.timesolts = new ArrayList<String[][]>();
+		this.genoma = new ArrayList<Integer>();
 		for(int i=0; i < numAgents; i++) {
+			int_random = rand.nextInt(2);
 			this.timesolts.add(new String[7][2]);
 			this.solution.add(generateRandom());
+			this.genoma.add(int_random);
 		}
 	}
 
-	public void calculateSchedulingFO(HashMap<String, Integer> pA, HashMap<String, Integer> pB, HashMap<String, Integer> pC) {
+	public void calculateSchedulingFO(HashMap<String, Integer> pA, HashMap<String, Integer> pB, HashMap<String, Integer> pC, HashMap<String, String> pBreaks) {
 
 		@SuppressWarnings("unchecked")
 		HashMap<String, Integer> a = (HashMap<String, Integer>) pA.clone();
@@ -46,7 +51,8 @@ public class Chromosome implements Serializable{
 				String day = actual[i][0].split(" ")[0];
 				String initialHour = actual[i][0].split(" ")[1];
 				String activity = actual[i][1];
-				HashMap<String, String> labor = getTimeSlotsAgent(initialHour, activity);
+				String initBreak = pBreaks.get(initialHour);
+				HashMap<String, String> labor = getTimeSlotsAgent(initialHour, activity, initBreak);
 				for(Map.Entry<String, String> entry: labor.entrySet()) {
 					String dayHour = day + " " + entry.getKey();
 					String act = entry.getValue();
@@ -152,14 +158,17 @@ public class Chromosome implements Serializable{
 		}
 
 		this.FO += (maxValue * 25);
+		this.fitness = 1/this.FO;
+		this.setFoCalculated(true);
 
 	}
 
-	public HashMap<String, String> getTimeSlotsAgent(String initialHour, String permutation) {
+	public HashMap<String, String> getTimeSlotsAgent(String initialHour, String permutation, String initBreak) {
 
 		HashMap<String, String> labor = new HashMap<String, String>();
 		LocalTime init = LocalTime.of(Integer.parseInt(initialHour.split(":")[0]), Integer.parseInt(initialHour.split(":")[1]));
 		String firstAct = Character.toString(permutation.charAt(0));
+		LocalTime pause = LocalTime.of(Integer.parseInt(initBreak.split(":")[0]),Integer.parseInt(initBreak.split(":")[1]));
 		//Primeras dos horas se hacen la actividad 1
 		labor.put(initialHour, firstAct);
 		LocalTime next = init.plusMinutes(30);
@@ -204,7 +213,12 @@ public class Chromosome implements Serializable{
 		labor.put(next.toString(), fourthAct);
 		next = next.plusMinutes(30);
 		labor.put(next.toString(), fourthAct);
-
+		
+		//Pausas
+		next = pause;
+		labor.put(next.toString(), "L");
+		next = next.plusMinutes(30);
+		labor.put(next.toString(), "L");
 		return labor;
 
 	}
@@ -233,7 +247,7 @@ public class Chromosome implements Serializable{
 		this.fitness = fitness;
 	}
 
-	public float getFatherRate() {
+	public double getFatherRate() {
 		return fatherRate;
 	}
 
@@ -253,7 +267,7 @@ public class Chromosome implements Serializable{
 		this.id = id;
 	}
 
-	public void setFatherRate(float fatherRate) {
+	public void setFatherRate(double fatherRate) {
 		this.fatherRate = fatherRate;
 	}
 
@@ -273,5 +287,21 @@ public class Chromosome implements Serializable{
 		value = value * factor;
 		long tmp = Math.round(value);
 		return (double) tmp / factor;
+	}
+
+	public boolean isFoCalculated() {
+		return foCalculated;
+	}
+
+	public void setFoCalculated(boolean foCalculated) {
+		this.foCalculated = foCalculated;
+	}
+
+	public ArrayList<Integer> getGenoma() {
+		return genoma;
+	}
+
+	public void setGenoma(ArrayList<Integer> genoma) {
+		this.genoma = genoma;
 	}
 }

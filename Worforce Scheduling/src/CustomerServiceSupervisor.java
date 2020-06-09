@@ -5,6 +5,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
+
+import javax.swing.text.StyledEditorKit.BoldAction;
+
 import jade.core.AID;
 import jade.core.Agent;
 import jade.domain.DFService;
@@ -20,6 +24,16 @@ import jade.core.behaviours.*;
 public class CustomerServiceSupervisor extends Agent{
 
 
+	private class Fathers{
+		int father1;
+		int father2;
+
+		public Fathers(int pFather1, int pFather2) {
+			father1 = pFather1;
+			father2 = pFather2;
+		}
+	}
+
 	private static final long serialVersionUID = 1L;
 
 	private HashMap<String, Integer> actA = new HashMap<String, Integer>();
@@ -27,6 +41,7 @@ public class CustomerServiceSupervisor extends Agent{
 	private HashMap<String, Integer> actC = new HashMap<String, Integer>();
 	private HashMap<String, Integer> totalDemand = new HashMap<String, Integer>();
 	private HashMap<String, String> breaks = new HashMap<String, String>();
+	private ArrayList<Fathers> fathersSelected;
 	private CSSupervisorGUI myGui;
 	private int population;
 	private float mutationRate;
@@ -93,7 +108,7 @@ public class CustomerServiceSupervisor extends Agent{
 			}
 
 			br.close();
-			
+
 			br = new BufferedReader(new FileReader(new File("./Breaks.csv")));
 			line = br.readLine();
 
@@ -170,8 +185,11 @@ public class CustomerServiceSupervisor extends Agent{
 
 	private class GeneticAlgorithm extends Behaviour {
 		private int step = 0;
+		private boolean firstIteration = false;
 		private int repliesCnt;
-		private Chromosome bestChromosome = new Chromosome(-1, 0);
+		private int expectedReplies;
+		private Chromosome bestChromosome = new Chromosome(0);
+		private double totalFitness;
 		private MessageTemplate mt; // The template to receive replies
 		@Override
 		public void action() {
@@ -181,13 +199,14 @@ public class CustomerServiceSupervisor extends Agent{
 				//Initiate the population
 				bestChromosome.setFO(100000000);
 				for(int i=0; i <population;i++) {
-					Chromosome chromosome = new Chromosome(i, serviceAgents.length);
+					Chromosome chromosome = new Chromosome(serviceAgents.length);
 					chromosomes.add(chromosome);
 				}
 				step = 1;
 				break;
 			case 1:
 				//Enviar solitudes
+				expectedReplies = 0;
 				for (int i = 0; i < serviceAgents.length; ++i) {
 					enviarHora(serviceAgents[i]);
 				}
@@ -213,12 +232,16 @@ public class CustomerServiceSupervisor extends Agent{
 					int idAgent = Integer.parseInt(reply.getSender().getName().split(" ")[1].split("@")[0]) - 1;
 					chromosomes.get(chrom).setSolutionToTimeslots(idAgent, config);
 					repliesCnt++;
-					if(repliesCnt == serviceAgents.length * population) {
-						System.out.println("Total messages received from agents: " + repliesCnt);
-						for(Chromosome actual: chromosomes) {
-							System.out.println("Chromosome: " + actual.getId() + " has " + actual.getTimesolts().size() + " solutions");
+					if(!firstIteration) {
+						if(repliesCnt == serviceAgents.length * population) {
+							System.out.println("Total messages received from agents: " + repliesCnt);
+							step = 3;
 						}
-						step = 3;
+					}else {
+						if(repliesCnt == expectedReplies) {
+							System.out.println("Total messages received from agents: " + repliesCnt);
+							step = 6;
+						}
 					}
 				}
 				else {
@@ -226,29 +249,38 @@ public class CustomerServiceSupervisor extends Agent{
 				}
 				break;
 			case 3:
-				//Calcular FO
-				//FALTAN ALMUERZOS, DUPLICAR LOS MARTES Y MIERCOLES DE LA SEGUNDA SEMANA Y VER BIEN LA PARTE DEL 25.
-				System.out.println("Calculating the objective function of each chromosome...");
 				for(Chromosome actual: chromosomes) {
-					actual.calculateSchedulingFO(actA, actB, actC);
-					System.out.println("Finished calculating the OF of Chromosome: " + actual.getId() + " FO: " + actual.getFO());
-					double currentFO = actual.getFO();
-					if(currentFO < bestChromosome.getFO()) {
-						bestChromosome = actual;
-					}
+					if (!actual.isFoCalculated()) actual.calculateSchedulingFO(actA, actB, actC, breaks);
 				}
 				step = 4;
 				break;
 			case 4:
-				System.out.println("The best solution of first generation is chromosome: " + bestChromosome.getId() + " with a FO of: " + bestChromosome.getFO());
-				block();
+				//Prob fathers
+				totalFitness = 0;
+				for(Chromosome actual: chromosomes) {
+					double currentFitness = actual.getFitness();
+					totalFitness += currentFitness;
+				}
+				//Set Prob
+				for(Chromosome actual: chromosomes) {
+					actual.setFatherRate(actual.getFitness()/totalFitness);
+				}
+				fathersSelected = new ArrayList<CustomerServiceSupervisor.Fathers>();
+				selectFathers();
+				generateKids();
+				step = 5;
 				//Cruces
 				break;
 			case 5:
 				//Mutación
+				mutateKids();
+				if(!firstIteration) firstIteration = true;
+				step = 1;
 				break;
 			case 6:
 				//Nueva generación y verificar las iteraciones
+				System.out.println("Voy a hacer una nueva generacion perris");
+				block();
 				break;
 			default:
 				block();
@@ -269,10 +301,13 @@ public class CustomerServiceSupervisor extends Agent{
 			cfp.setConversationId("report-option");
 			idAgent = Integer.parseInt(agente.getName().split(" ")[1].split("@")[0]) - 1;
 			for(int i=0; i < chromosomes.size();i++) {
-				cfp.setContent(i+" "+chromosomes.get(i).getSolution().get(idAgent));
-				myAgent.send(cfp);
-				mt = MessageTemplate.and(MessageTemplate.MatchConversationId("report-option"),
-						MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+				if(!chromosomes.get(i).isFoCalculated()) {
+					expectedReplies ++;
+					cfp.setContent(i+" "+chromosomes.get(i).getSolution().get(idAgent));
+					myAgent.send(cfp);
+					mt = MessageTemplate.and(MessageTemplate.MatchConversationId("report-option"),
+							MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+				}
 			}
 		}
 	}
@@ -325,5 +360,139 @@ public class CustomerServiceSupervisor extends Agent{
 		this.maxIteration = maxIteration;
 	}
 
+	public void selectFathers() {
+		Double ball;
+		Random rand = new Random();
+		ArrayList<Double> rulette = new ArrayList<Double>();
+		//Creating the rulette with acum prob of the population
+		rulette.add(chromosomes.get(0).getFatherRate());
+		for(int i=1; i < population; i++) {
+			rulette.add(rulette.get(i-1)+chromosomes.get(i).getFatherRate());
+		}
+		for (int i=0; i<chromosomes.size()/2;i++) {
+			ball = rand.nextDouble();
+			Casino(rulette, ball, i);
+		}
+	}
+	public void Casino(ArrayList<Double> rulette, Double ball, int pos) {
+		int papa1, papa2;
+		papa1 = 0;
+		papa2 = 0;
+		//Father 1
+		//Case 1 
+		if (0 < ball && ball<=rulette.get(rulette.size()-1)) papa1 = 0;
+		//Case 2
+		for(int i=0;i < rulette.size()-1;i++) {
+			if (rulette.get(i) <= ball && ball <= rulette.get(i+1)) {
+				papa1 = i;
+				break;
+			}
+		}
+		//Case 3
+		if (rulette.get(rulette.size()-1)<ball && ball <=1) papa1 = rulette.size()-1;
+		//Father 2
+		if (ball< 0.5) {
+			ball+=0.5;
+		} else {
+			ball += (ball+0.5)-1;
+		}
+		//Case 1 
+		if (0 < ball && ball<=rulette.get(rulette.size()-1)) papa2 = 0;
+		//Case 2
+		for(int i=0;i < rulette.size()-1;i++) {
+			if (rulette.get(i) <= ball && ball <= rulette.get(i+1)) {
+				papa2 = i;
+				break;
+			}
+		}
+		//Case 3
+		if (rulette.get(rulette.size()-1)<ball && ball <=1) papa2 = rulette.size()-1;
+		fathersSelected.add(new Fathers(papa1,papa2));
+	}
+
+	public void generateKids() {
+		Chromosome son1;
+		Chromosome son2;
+		Double prob;
+		Random rand = new Random();
+		for(Fathers actual:fathersSelected) {
+			prob = rand.nextDouble();
+			if (prob < crossoverRate) {
+				son1 = new Chromosome(serviceAgents.length);
+				son2 = new Chromosome(serviceAgents.length);
+				crossFathers(son1, son2, actual);
+				chromosomes.add(son1);
+				chromosomes.add(son2);
+			}
+		}
+	}
+
+	public void crossFathers(Chromosome son1, Chromosome son2, Fathers couple) {
+		Chromosome father1 = chromosomes.get(couple.father1);
+		Chromosome father2 = chromosomes.get(couple.father2);
+		//Information solution of child 1
+		ArrayList<Double> solution1 = new ArrayList<Double>();
+		ArrayList<Integer> genoma = father1.getGenoma();
+		for (int i=0; i < father1.getSolution().size();i++) {
+			if(genoma.get(i)==0) {
+				solution1.add(father1.getSolution().get(i));
+			}else {
+				solution1.add(father1.getSolution().get(i)+father2.getSolution().get(i));
+			}
+		}
+		//Information solution of child 2
+		ArrayList<Double> solution2 = new ArrayList<Double>();
+		genoma = father2.getGenoma();
+		for (int i=0; i < father2.getSolution().size();i++) {
+			if(genoma.get(i)==0) {
+				solution2.add(father2.getSolution().get(i));
+			}else {
+				solution2.add(father1.getSolution().get(i)-father2.getSolution().get(i));
+			}
+		}
+		//Fix by circular
+		//Child1 
+		for(int i=0; i < solution1.size();i++) {
+			if(solution1.get(i)>47) {
+				solution1.set(i, son1.roundTwoDecimals(solution1.get(i)%47, 2));
+			}
+		}
+		son1.setSolution(solution1);
+		//Child2
+		for(int i=0; i < solution2.size();i++) {
+			if(solution2.get(i)<0) {
+				solution2.set(i, son2.roundTwoDecimals(47+solution2.get(i), 2));
+			}
+		}
+		son2.setSolution(solution2);
+	}
+
+	public void mutateKids() {
+		Double prob;
+		Random rand = new Random();
+		ArrayList<Double> solutionSwap;
+		for(int i=population+1;i < chromosomes.size(); i++) {
+			prob = rand.nextDouble();
+			if(prob < mutationRate) {
+				solutionSwap = mutate(chromosomes.get(i));
+				chromosomes.get(i).setSolution(solutionSwap);
+			}
+		}
+	}
+
+	public ArrayList<Double> mutate(Chromosome child) {
+		ArrayList<Double> swap = new ArrayList<Double>();
+		ArrayList<Double> sol = child.getSolution();
+		Random rand = new Random();
+		int upper = serviceAgents.length;
+		int pos = rand.nextInt(upper);
+		for(int i=pos+1; i < sol.size();i++) {
+			swap.add(sol.get(i));
+		}
+		for(int i=0; i < pos+1;i++) {
+			swap.add(sol.get(i));
+		}
+		return swap;
+	}
 
 }
