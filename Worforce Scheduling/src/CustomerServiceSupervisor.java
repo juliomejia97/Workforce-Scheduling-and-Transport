@@ -404,7 +404,7 @@ public class CustomerServiceSupervisor extends Agent{
 			cfp.addReceiver(agente);
 			cfp.setConversationId("report-option");
 			idAgent = Integer.parseInt(agente.getName().split(" ")[1].split("@")[0]) - 1;
-			for(int i=0; i < chromosomes.size();i++) {
+			for(int i=0; i < chromosomes.size(); i++) {
 				if(!chromosomes.get(i).isFoCalculated()) {
 					expectedReplies ++;
 					cfp.setContent(i+" "+chromosomes.get(i).getSolution().get(idAgent));
