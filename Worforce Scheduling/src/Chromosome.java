@@ -143,16 +143,16 @@ public class Chromosome implements Serializable{
 			int mayor = 0;
 			mayor += a.get(maxAct.getKey());
 			mayor += b.get(maxAct.getKey());
-			mayor += b.get(maxAct.getKey());
+			mayor += c.get(maxAct.getKey());
 			maxAct.setValue(mayor);
 		}
 		
 		for(Map.Entry<String, Integer> maxAct: max.entrySet()) {
-			if(maxAct.getValue()>maxValue) {
+			if(maxAct.getValue() > maxValue) {
 				maxValue = maxAct.getValue();
 			}
 		}
-
+		
 		this.FO += (maxValue * 25);
 		this.fitness = 1 / this.FO;
 		this.setFoCalculated(true);
@@ -173,8 +173,6 @@ public class Chromosome implements Serializable{
 		labor.put(next.toString(), firstAct);
 		next = next.plusMinutes(30);
 		labor.put(next.toString(), firstAct);
-		next = next.plusMinutes(30);
-		labor.put(next.toString(), firstAct);
 		//Proximas dos horas y media se hace la actividad 2
 		String secAct = Character.toString(permutation.charAt(1));
 		next = next.plusMinutes(30);
@@ -187,7 +185,7 @@ public class Chromosome implements Serializable{
 		labor.put(next.toString(), secAct);
 		next = next.plusMinutes(30);
 		labor.put(next.toString(), secAct);
-		//Proximas dos horas se hace la actividad 3
+		//Proximas dos horas y media se hace la actividad 3
 		String thirdAct = Character.toString(permutation.charAt(2));
 		next = next.plusMinutes(30);
 		labor.put(next.toString(), thirdAct);
@@ -197,10 +195,10 @@ public class Chromosome implements Serializable{
 		labor.put(next.toString(), thirdAct);
 		next = next.plusMinutes(30);
 		labor.put(next.toString(), thirdAct);
-		//Ultimas dos horas y media se hace la actividad 4
-		String fourthAct = Character.toString(permutation.charAt(3));
 		next = next.plusMinutes(30);
-		labor.put(next.toString(), fourthAct);
+		labor.put(next.toString(), thirdAct);
+		//Ultimas dos horas se hace la actividad 4
+		String fourthAct = Character.toString(permutation.charAt(3));
 		next = next.plusMinutes(30);
 		labor.put(next.toString(), fourthAct);
 		next = next.plusMinutes(30);

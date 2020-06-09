@@ -338,18 +338,17 @@ public class CustomerServiceSupervisor extends Agent{
 				ArrayList<Boolean> auxBoolean = new ArrayList<Boolean>();
 				int elit = Math.round(population * elitRate);
 				Random rand = new Random();
-				iterations++;
 				if(iterations == maxIteration) {
 					System.out.println("Finished iterating...");
 					step = 7;
 					
 				} else {
-					
+					iterations++;
 					System.out.println("Starting generation " + iterations + "...");
 					for(Chromosome actual: chromosomes) {
 						if (!actual.isFoCalculated()) actual.calculateSchedulingFO(actA, actB, actC, breaks);
 					}
-
+					
 					//Sort by the fitness of each chromosome (High to low)
 					Collections.sort(chromosomes, (a, b) -> a.getFitness() >= b.getFitness() ? 1 : -1);
 
@@ -431,6 +430,7 @@ public class CustomerServiceSupervisor extends Agent{
 			casino(rulette, ball, i);
 		}
 	}
+	
 	public void casino(ArrayList<Double> rulette, double ball, int pos) {
 		int papa1, papa2;
 		papa1 = 0;
