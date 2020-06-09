@@ -283,7 +283,10 @@ public class CustomerServiceSupervisor extends Agent{
 				for(Chromosome actual: chromosomes) {
 					if (!actual.isFoCalculated()) actual.calculateSchedulingFO(actA, actB, actC, breaks);
 				}
-				//TODO: 
+				//TODO: Organizar por fitness de mayor a menor
+				//TODO: Utilizar elitismo parcial y asegurar que desde 0 - probElit*poblacion - 1
+				//TODO: Y el resto que es probElit*poblacion - chromosomes.size() escogerlos aleatoriamente hasta llegar al size de población
+				//TODO: ir a step 4
 				block();
 				break;
 			default:
