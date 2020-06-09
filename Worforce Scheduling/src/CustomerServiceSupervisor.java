@@ -4,11 +4,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Random;
-
-import javax.swing.text.StyledEditorKit.BoldAction;
-
 import jade.core.AID;
 import jade.core.Agent;
 import jade.domain.DFService;
@@ -23,16 +21,6 @@ import jade.core.behaviours.*;
 
 public class CustomerServiceSupervisor extends Agent{
 
-
-	private class Fathers{
-		int father1;
-		int father2;
-
-		public Fathers(int pFather1, int pFather2) {
-			father1 = pFather1;
-			father2 = pFather2;
-		}
-	}
 
 	private static final long serialVersionUID = 1L;
 
@@ -52,6 +40,7 @@ public class CustomerServiceSupervisor extends Agent{
 	private AID[] serviceAgents;
 	private ArrayList<Chromosome> chromosomes;
 	private ContainerController container;
+
 	@Override
 	protected void setup() {
 
@@ -122,7 +111,7 @@ public class CustomerServiceSupervisor extends Agent{
 
 			br.close();
 
-			myGui = new CSSupervisorGUI(this);
+			setMyGui(new CSSupervisorGUI(this));
 			System.out.println("Supervisor started...");
 			//Subscribing the agent to the AMS Agent and Yellow Pages
 			DFAgentDescription dfd = new DFAgentDescription();
@@ -146,12 +135,75 @@ public class CustomerServiceSupervisor extends Agent{
 			System.out.println("IOException: " + e.getMessage());
 		}
 	}
+	
+	public int getPopulation() {
+		return population;
+	}
 
-	/*
-	 * Behaviour that initiate a genetic parallel algorithm
-	 * */
+	public void setPopulation(int population) {
+		this.population = population;
+	}
+
+	public float getMutationRate() {
+		return mutationRate;
+	}
+
+	public void setMutationRate(float mutationRate) {
+		this.mutationRate = mutationRate;
+	}
+
+	public float getCrossoverRate() {
+		return crossoverRate;
+	}
+
+	public void setCrossoverRate(float crossoverRate) {
+		this.crossoverRate = crossoverRate;
+	}
+
+	public float getElitRate() {
+		return elitRate;
+	}
+
+	public void setElitRate(float elitRate) {
+		this.elitRate = elitRate;
+	}
+
+	public float getThreshold() {
+		return threshold;
+	}
+
+	public void setThreshold(float threshold) {
+		this.threshold = threshold;
+	}
+
+	public int getMaxIteration() {
+		return maxIteration;
+	}
+
+	public void setMaxIteration(int maxIteration) {
+		this.maxIteration = maxIteration;
+	}
+	
+	public CSSupervisorGUI getMyGui() {
+		return myGui;
+	}
+
+	public void setMyGui(CSSupervisorGUI myGui) {
+		this.myGui = myGui;
+	}
+
+	public ContainerController getContainer() {
+		return container;
+	}
+
+	public void setContainer(ContainerController container) {
+		this.container = container;
+	}
+
 	public void InitiateGenetic(int pop, int iterations, float mutation, float crossover, float elitism, float threas) {
 		addBehaviour(new OneShotBehaviour() {
+
+			private static final long serialVersionUID = 1L;
 
 			public void action() {
 				population  = pop;
@@ -160,7 +212,7 @@ public class CustomerServiceSupervisor extends Agent{
 				crossoverRate = crossover;
 				elitRate = elitism;
 				threshold = threas;
-				container = getContainerController();
+				setContainer(getContainerController());
 				chromosomes = new ArrayList<Chromosome>();
 				DFAgentDescription template = new DFAgentDescription();
 				ServiceDescription sd = new ServiceDescription();
@@ -184,12 +236,14 @@ public class CustomerServiceSupervisor extends Agent{
 	}
 
 	private class GeneticAlgorithm extends Behaviour {
+
+		private static final long serialVersionUID = 1L;
 		private int step = 0;
 		private boolean firstIteration = false;
 		private int repliesCnt;
 		private int expectedReplies;
-		private Chromosome bestChromosome = new Chromosome(0);
 		private double totalFitness;
+		private int iterations;
 		private MessageTemplate mt; // The template to receive replies
 		@Override
 		public void action() {
@@ -197,7 +251,7 @@ public class CustomerServiceSupervisor extends Agent{
 			switch (step) {
 			case 0:
 				//Initiate the population
-				bestChromosome.setFO(100000000);
+				iterations = 1;
 				for(int i=0; i <population;i++) {
 					Chromosome chromosome = new Chromosome(serviceAgents.length);
 					chromosomes.add(chromosome);
@@ -265,7 +319,7 @@ public class CustomerServiceSupervisor extends Agent{
 				for(Chromosome actual: chromosomes) {
 					actual.setFatherRate(actual.getFitness()/totalFitness);
 				}
-				fathersSelected = new ArrayList<CustomerServiceSupervisor.Fathers>();
+				fathersSelected = new ArrayList<Fathers>();
 				selectFathers();
 				generateKids();
 				step = 5;
@@ -279,26 +333,61 @@ public class CustomerServiceSupervisor extends Agent{
 				break;
 			case 6:
 				//Nueva generación y verificar las iteraciones
-				System.out.println("Voy a hacer una nueva generacion perris");
+				ArrayList<Chromosome> newGeneration = new ArrayList<Chromosome>();
+				ArrayList<Chromosome> auxGeneration = new ArrayList<Chromosome>();
+				ArrayList<Boolean> auxBoolean = new ArrayList<Boolean>();
+				int elit = Math.round(population * elitRate);
+				Random rand = new Random();
+				iterations++;
+				if(iterations == maxIteration) {
+					step = 7;
+				}
+				System.out.println("Starting generation " + iterations + "...");
 				for(Chromosome actual: chromosomes) {
 					if (!actual.isFoCalculated()) actual.calculateSchedulingFO(actA, actB, actC, breaks);
 				}
-				//TODO: Organizar por fitness de mayor a menor
-				//TODO: Utilizar elitismo parcial y asegurar que desde 0 - probElit*poblacion - 1
-				//TODO: Y el resto que es probElit*poblacion - chromosomes.size() escogerlos aleatoriamente hasta llegar al size de población
-				//TODO: ir a step 4
+				//Sort by the fitness of each chromosome (High to low)
+				Collections.sort(chromosomes, (a, b) -> a.getFitness() > b.getFitness() ? 1 : -1);
+
+				//Create the first new generation with the elitism rate and population
+				for(int i = 0; i < elit; i++) {
+					newGeneration.add(chromosomes.get(i));
+				}
+								
+				//Initiate sec generation and booleans
+				for(int i = elit; i < population; i++) {
+					auxGeneration.add(chromosomes.get(i));
+					auxBoolean.add(false);
+				}
+								
+				//Create the second new generation with the elitism rate, population and rand function
+				int range = population - elit;
+				for(int i = elit; i < population; i++) {
+					boolean diff = false;
+					while(!diff) {
+						int pos = rand.nextInt(range);
+						if(!auxBoolean.get(pos)) {
+							diff = true;
+							auxBoolean.set(pos, true);
+							newGeneration.add(auxGeneration.get(pos));
+						}
+					}
+				}
+				
+				System.out.println("Size of new generation: " + newGeneration.size());
+				chromosomes.clear();
+				chromosomes = newGeneration;
+				System.out.println("Size of new Chromosome: " + chromosomes.size());
 				block();
-				break;
-			default:
-				block();
+				step = 4;
+				
 				break;
 			}
-
 		}
 
 		@Override
 		public boolean done() {
-			return false;
+			return step == 7;
 		}
 
 		public void enviarHora(AID agente) {
@@ -319,56 +408,8 @@ public class CustomerServiceSupervisor extends Agent{
 		}
 	}
 
-	public int getPopulation() {
-		return population;
-	}
-
-	public void setPopulation(int population) {
-		this.population = population;
-	}
-
-	public float getMutationRate() {
-		return mutationRate;
-	}
-
-	public void setMutationRate(float mutationRate) {
-		this.mutationRate = mutationRate;
-	}
-
-	public float getCrossoverRate() {
-		return crossoverRate;
-	}
-
-	public void setCrossoverRate(float crossoverRate) {
-		this.crossoverRate = crossoverRate;
-	}
-
-	public float getElitRate() {
-		return elitRate;
-	}
-
-	public void setElitRate(float elitRate) {
-		this.elitRate = elitRate;
-	}
-
-	public float getThreshold() {
-		return threshold;
-	}
-
-	public void setThreshold(float threshold) {
-		this.threshold = threshold;
-	}
-
-	public int getMaxIteration() {
-		return maxIteration;
-	}
-
-	public void setMaxIteration(int maxIteration) {
-		this.maxIteration = maxIteration;
-	}
-
 	public void selectFathers() {
-		Double ball;
+		double ball;
 		Random rand = new Random();
 		ArrayList<Double> rulette = new ArrayList<Double>();
 		//Creating the rulette with acum prob of the population
@@ -378,10 +419,10 @@ public class CustomerServiceSupervisor extends Agent{
 		}
 		for (int i=0; i<chromosomes.size()/2;i++) {
 			ball = rand.nextDouble();
-			Casino(rulette, ball, i);
+			casino(rulette, ball, i);
 		}
 	}
-	public void Casino(ArrayList<Double> rulette, Double ball, int pos) {
+	public void casino(ArrayList<Double> rulette, double ball, int pos) {
 		int papa1, papa2;
 		papa1 = 0;
 		papa2 = 0;
@@ -420,7 +461,7 @@ public class CustomerServiceSupervisor extends Agent{
 	public void generateKids() {
 		Chromosome son1;
 		Chromosome son2;
-		Double prob;
+		double prob;
 		Random rand = new Random();
 		for(Fathers actual:fathersSelected) {
 			prob = rand.nextDouble();
@@ -434,9 +475,10 @@ public class CustomerServiceSupervisor extends Agent{
 		}
 	}
 
+	@SuppressWarnings("static-access")
 	public void crossFathers(Chromosome son1, Chromosome son2, Fathers couple) {
-		Chromosome father1 = chromosomes.get(couple.father1);
-		Chromosome father2 = chromosomes.get(couple.father2);
+		Chromosome father1 = chromosomes.get(couple.getFather1());
+		Chromosome father2 = chromosomes.get(couple.getFather2());
 		//Information solution of child 1
 		ArrayList<Double> solution1 = new ArrayList<Double>();
 		ArrayList<Integer> genoma = father1.getGenoma();
@@ -475,7 +517,8 @@ public class CustomerServiceSupervisor extends Agent{
 	}
 
 	public void mutateKids() {
-		Double prob;
+
+		double prob;
 		Random rand = new Random();
 		ArrayList<Double> solutionSwap;
 		for(int i=population+1;i < chromosomes.size(); i++) {
@@ -488,6 +531,7 @@ public class CustomerServiceSupervisor extends Agent{
 	}
 
 	public ArrayList<Double> mutate(Chromosome child) {
+
 		ArrayList<Double> swap = new ArrayList<Double>();
 		ArrayList<Double> sol = child.getSolution();
 		Random rand = new Random();

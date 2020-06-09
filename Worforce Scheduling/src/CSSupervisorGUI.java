@@ -27,8 +27,6 @@ public class CSSupervisorGUI extends JPanel {
 	private JTextField txtMutationProbability;
 	private JTextField txtElitismPercentage;
 	private JTextField txtUmbral;
-//	private JScrollPane barraArrastre;
-//	private JTable tblAgentes;
 	private JButton btnGenetic;
 	private CustomerServiceSupervisor myAgent;
 	public CSSupervisorGUI(CustomerServiceSupervisor a) {
@@ -41,10 +39,6 @@ public class CSSupervisorGUI extends JPanel {
 		menu.getContentPane().setLayout(new BorderLayout());
 		menu.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-//		String[] dataHeader = {"Tuesday", "Wendsday", "Thurdsday", "Friday", "Saturday", "Sunday", "Monday"};
-//		Vector<String> header = new Vector<String>(Arrays.asList(dataHeader));
-//		Vector<String> view = new Vector<String>();
-//		Vector<List<String>> agentData = new Vector<List<String>>();
 		setBackground(Color.BLACK);
 		setSize(700, 600);
 		setLayout(null);
@@ -128,31 +122,10 @@ public class CSSupervisorGUI extends JPanel {
 		btnGenetic.setBounds(270, 300, 150, 26);
 		add(btnGenetic);
 		
-		//PRUEBA
-//		for(int i = 0; i < 8; i++) {
-//			view = new Vector<String>();
-//			view.add("");
-//			view.add("");
-//			view.add("");
-//			view.add("");
-//			view.add("");
-//			view.add("");
-//			view.add("");
-//			agentData.add(view);
-//		}
-//		
-//		barraArrastre = new JScrollPane();
-//		barraArrastre.setBounds(18, 350, 650, 150);
-//		add(barraArrastre);
-//		tblAgentes = new JTable();
-//		barraArrastre.setViewportView(tblAgentes);
-//		tblAgentes.setModel(new DefaultTableModel(agentData, header));
-		
 		menu.getContentPane().add(this);
 		menu.setResizable(false);
 		menu.setVisible(true);
 		
-		//Listers and behaviours
 		btnGenetic.addActionListener(new ActionListener() {
 			
 			public void actionPerformed(ActionEvent e) {

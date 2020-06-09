@@ -16,13 +16,14 @@ public class Chromosome implements Serializable{
 	private double fitness;
 	private double fatherRate;
 	private boolean foCalculated;
+	
 	public Chromosome(int numAgents) {
 		Random rand = new Random();
 		int int_random;
 		this.FO = 0;
 		this.fitness = 0;
 		this.fatherRate = 0;
-		setFoCalculated(false);
+		this.foCalculated = false;
 		this.solution = new ArrayList<Double>();
 		this.timesolts = new ArrayList<String[][]>();
 		this.genoma = new ArrayList<Integer>();
@@ -140,14 +141,9 @@ public class Chromosome implements Serializable{
 
 		for(Map.Entry<String, Integer> maxAct: max.entrySet()) {
 			int mayor = 0;
-			
 			mayor += a.get(maxAct.getKey());
-
 			mayor += b.get(maxAct.getKey());
-
-
 			mayor += b.get(maxAct.getKey());
-
 			maxAct.setValue(mayor);
 		}
 		
@@ -158,7 +154,7 @@ public class Chromosome implements Serializable{
 		}
 
 		this.FO += (maxValue * 25);
-		this.fitness = 1/this.FO;
+		this.fitness = 1 / this.FO;
 		this.setFoCalculated(true);
 
 	}
@@ -167,8 +163,8 @@ public class Chromosome implements Serializable{
 
 		HashMap<String, String> labor = new HashMap<String, String>();
 		LocalTime init = LocalTime.of(Integer.parseInt(initialHour.split(":")[0]), Integer.parseInt(initialHour.split(":")[1]));
-		String firstAct = Character.toString(permutation.charAt(0));
 		LocalTime pause = LocalTime.of(Integer.parseInt(initBreak.split(":")[0]),Integer.parseInt(initBreak.split(":")[1]));
+		String firstAct = Character.toString(permutation.charAt(0));
 		//Primeras dos horas se hacen la actividad 1
 		labor.put(initialHour, firstAct);
 		LocalTime next = init.plusMinutes(30);
@@ -219,6 +215,7 @@ public class Chromosome implements Serializable{
 		labor.put(next.toString(), "L");
 		next = next.plusMinutes(30);
 		labor.put(next.toString(), "L");
+		
 		return labor;
 
 	}
@@ -271,24 +268,6 @@ public class Chromosome implements Serializable{
 		this.fatherRate = fatherRate;
 	}
 
-	public static double generateRandom(){
-		Random rand = new Random();
-		double upperbound = 47;
-		int lowestbound = 0;
-		double range = upperbound - lowestbound;
-		double number = rand.nextDouble() * range;
-		double shifted = number + lowestbound;
-		return roundTwoDecimals(shifted, 2);
-	}
-	public static double roundTwoDecimals(double value,int places) {
-		if (places < 0) throw new IllegalArgumentException();
-
-		long factor = (long) Math.pow(10, places);
-		value = value * factor;
-		long tmp = Math.round(value);
-		return (double) tmp / factor;
-	}
-
 	public boolean isFoCalculated() {
 		return foCalculated;
 	}
@@ -303,5 +282,25 @@ public class Chromosome implements Serializable{
 
 	public void setGenoma(ArrayList<Integer> genoma) {
 		this.genoma = genoma;
+	}
+	
+	public static double generateRandom(){
+		Random rand = new Random();
+		double upperbound = 47;
+		int lowestbound = 0;
+		double range = upperbound - lowestbound;
+		double number = rand.nextDouble() * range;
+		double shifted = number + lowestbound;
+		return roundTwoDecimals(shifted, 2);
+	}
+	
+	public static double roundTwoDecimals(double value,int places) {
+		
+		if (places < 0) throw new IllegalArgumentException();
+
+		long factor = (long) Math.pow(10, places);
+		value = value * factor;
+		long tmp = Math.round(value);
+		return (double) tmp / factor;
 	}
 }

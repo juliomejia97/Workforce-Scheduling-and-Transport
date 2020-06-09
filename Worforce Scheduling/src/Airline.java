@@ -48,6 +48,14 @@ public class Airline extends Agent{
 		} catch (StaleProxyException e) {
 			System.out.println("StaleProxyException: " + e.getMessage());
 		}
-		myInterface = new AirlineGUI(this);
+		setMyInterface(new AirlineGUI(this));
+	}
+	
+	public AirlineGUI getMyInterface() {
+		return myInterface;
+	}
+	
+	public void setMyInterface(AirlineGUI myInterface) {
+		this.myInterface = myInterface;
 	}
 }

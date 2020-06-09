@@ -2,7 +2,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
@@ -12,15 +11,11 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import jade.lang.acl.UnreadableException;
 
 public class CustomerServiceAgent extends Agent{
-	
-	/**
-	 * 
-	 */
+
 	private static final long serialVersionUID = 1L;
-	
+
 	private String name;
 	private double coorX;
 	private double coorY;
@@ -36,11 +31,11 @@ public class CustomerServiceAgent extends Agent{
 		opcions = new ArrayList<String>();
 		Object[] params = getArguments();
 		String param = params[0].toString();
-		
+
 		String [] data = param.split(";");
 		this.name = "Agente " + data[0].trim();
-		this.coorX = Double.parseDouble(data[1].trim());
-		this.coorY = Double.parseDouble(data[2].trim());
+		this.setCoorX(Double.parseDouble(data[1].trim()));
+		this.setCoorY(Double.parseDouble(data[2].trim()));
 		this.actA = Boolean.parseBoolean(data[3].trim());
 		if(actA) activities = activities + "A";
 		this.actB = Boolean.parseBoolean(data[4].trim());
@@ -54,70 +49,89 @@ public class CustomerServiceAgent extends Agent{
 		this.days.put("Sab", Boolean.parseBoolean(data[10].trim()));
 		this.days.put("Dom", Boolean.parseBoolean(data[11].trim()));
 		this.days.put("Lun", Boolean.parseBoolean(data[12].trim()));
-		
+
 		System.out.println(this.name + " started...");
-		
+
 		DFAgentDescription dfd = new DFAgentDescription();
-	    dfd.setName(getAID());
-	    //Offering different services
-	    //TODO: Look for other services that the agent offers
-	    ServiceDescription sd = new ServiceDescription();
-	    sd.setType("report-timeslot");
-	    sd.setName("JADE-scheduling");
-	    dfd.addServices(sd);
-	    try {
-	        DFService.register(this, dfd);
-	      }
-	      catch (FIPAException fe) {
-	        fe.printStackTrace();
-	      }
-	    GeneratePossiblesActivities();
-	    addBehaviour(new TimeSlotConfiguration());
+		dfd.setName(getAID());
+		//Offering different services
+		ServiceDescription sd = new ServiceDescription();
+		sd.setType("report-timeslot");
+		sd.setName("JADE-scheduling");
+		dfd.addServices(sd);
+		try {
+			DFService.register(this, dfd);
+		}
+		catch (FIPAException fe) {
+			fe.printStackTrace();
+		}
+		GeneratePossiblesActivities();
+		addBehaviour(new TimeSlotConfiguration());
 	}
-	
+
+	public double getCoorX() {
+		return coorX;
+	}
+
+	public void setCoorX(double coorX) {
+		this.coorX = coorX;
+	}
+
+	public double getCoorY() {
+		return coorY;
+	}
+
+	public void setCoorY(double coorY) {
+		this.coorY = coorY;
+	}
+
 	public void GeneratePossiblesActivities()  {
 		addBehaviour(new OneShotBehaviour() {
-			public void action() {		        
-		        permutationWithRepeation(activities);		    
-		      }
-		    } );
-		  
-	}
-	
-	public void permutationWithRepeation(String str1) {
-		  showPermutation(str1, "");
-		 }
-	
-	public void showPermutation(String str1, String NewStringToPrint) {
-		  if (NewStringToPrint.length() == 4) {
-		   opcions.add(NewStringToPrint);
-		   return;
-		  }
-		  for (int i = 0; i < str1.length(); i++) {
 
-		   showPermutation(str1, NewStringToPrint + str1.charAt(i));
-		  }
-		 }
-	
-	//TODO: Recieve the decimal part of the AG and report my option 
+			private static final long serialVersionUID = 1L;
+
+			public void action() {		        
+				permutationWithRepeation(activities);		    
+			}
+		} );
+
+	}
+
+	public void permutationWithRepeation(String str1) {
+		showPermutation(str1, "");
+	}
+
+	public void showPermutation(String str1, String NewStringToPrint) {
+		if (NewStringToPrint.length() == 4) {
+			opcions.add(NewStringToPrint);
+			return;
+		}
+		for (int i = 0; i < str1.length(); i++) {
+
+			showPermutation(str1, NewStringToPrint + str1.charAt(i));
+		}
+	}
+
 	private class TimeSlotConfiguration extends CyclicBehaviour {
+
+		private static final long serialVersionUID = 1L;
 		MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
-		  public void action() {
-			  ACLMessage msg = myAgent.receive(mt);
-			  Double proposal;
-			  Double permutation;
-			  int hour;
-			  int position;
-			  int chr;
-			  String[][] config;
-			  String message;
-			  String selection;
-			  String date;
-		    if (msg != null) {
-		    	message = (String) msg.getContent();
+
+		public void action() {
+			ACLMessage msg = myAgent.receive(mt);
+			Double proposal;
+			Double permutation;
+			int hour;
+			int position;
+			int chr;
+			String[][] config;
+			String message;
+			String selection;
+			String date;
+			if (msg != null) {
+				message = (String) msg.getContent();
 				chr = Integer.parseInt(message.split(" ")[0]);
 				proposal = Double.parseDouble(message.split(" ")[1]);
-				//TODO:
 				permutation = proposal%1;
 				hour = (int) (proposal - permutation);
 				position = (int) Math.round(permutation*opcions.size());
@@ -191,44 +205,39 @@ public class CustomerServiceAgent extends Agent{
 						break;
 					}
 				}
-				 ACLMessage reply = msg.createReply();
-				 reply.setPerformative(ACLMessage.INFORM);
-				 reply.setConversationId("report-option");
-				 Object info[] = {chr, config};
-		    	try {
+				ACLMessage reply = msg.createReply();
+				reply.setPerformative(ACLMessage.INFORM);
+				reply.setConversationId("report-option");
+				Object info[] = {chr, config};
+				try {
 					reply.setContentObject(info);
-					
+
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-		    	myAgent.send(reply);
-		    	
-		      
-		      }else {
-			    block();
-			  }
-		  }
-		  public String getHour(int hour) {
-			  String select;
-			  select = "";
-			  int entero = hour / 2;
-			  if(entero < 10) {
-				  select = "0" + select + entero ;
-			  }else {
-				  select = select + entero ;
-			  }
-			  if(hour%2!=0) {
-				  select = select + ":30";
-			  }else {
-				  select = select + ":00";
-			  }
-			  
-			  return select;
-		  }
-		}  // End of inner class OfferRequestsServer
-		
-	
-	
+				myAgent.send(reply);
 
+
+			}else {
+				block();
+			}
+		}
+		public String getHour(int hour) {
+			String select;
+			select = "";
+			int entero = hour / 2;
+			if(entero < 10) {
+				select = "0" + select + entero ;
+			}else {
+				select = select + entero ;
+			}
+			if(hour%2!=0) {
+				select = select + ":30";
+			}else {
+				select = select + ":00";
+			}
+
+			return select;
+		}
+	} 
 }
