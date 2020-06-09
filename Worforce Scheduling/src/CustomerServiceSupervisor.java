@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Random;
 import jade.core.AID;
@@ -40,6 +41,7 @@ public class CustomerServiceSupervisor extends Agent{
 	private AID[] serviceAgents;
 	private ArrayList<Chromosome> chromosomes;
 	private ContainerController container;
+	private ArrayList<Chromosome> bestChromosomes;
 
 	@Override
 	protected void setup() {
@@ -214,6 +216,7 @@ public class CustomerServiceSupervisor extends Agent{
 				threshold = threas;
 				setContainer(getContainerController());
 				chromosomes = new ArrayList<Chromosome>();
+				bestChromosomes = new ArrayList<Chromosome>();
 				DFAgentDescription template = new DFAgentDescription();
 				ServiceDescription sd = new ServiceDescription();
 				sd.setType("report-timeslot");
@@ -337,9 +340,11 @@ public class CustomerServiceSupervisor extends Agent{
 				ArrayList<Chromosome> auxGeneration = new ArrayList<Chromosome>();
 				ArrayList<Boolean> auxBoolean = new ArrayList<Boolean>();
 				int elit = Math.round(population * elitRate);
+				double bestFO = 1000000000;
 				Random rand = new Random();
 				if(iterations == maxIteration) {
 					System.out.println("Finished iterating...");
+					System.out.println("The best chromosome is: "+chromosomes.get(0).getFO());
 					step = 7;
 					
 				} else {
@@ -349,9 +354,32 @@ public class CustomerServiceSupervisor extends Agent{
 						if (!actual.isFoCalculated()) actual.calculateSchedulingFO(actA, actB, actC, breaks);
 					}
 					
+					for(Chromosome actual:chromosomes) {
+						if(actual.getFO() < bestFO) {
+							bestFO = actual.getFO();
+						}
+					}
+					System.out.println("Best FO of last iteration: " + bestFO);
+					
 					//Sort by the fitness of each chromosome (High to low)
-					Collections.sort(chromosomes, (a, b) -> a.getFitness() >= b.getFitness() ? 1 : -1);
-
+					Collections.sort(chromosomes, new Comparator<Chromosome>() {
+						public int compare(Chromosome o1, Chromosome o2) {
+							return Double.compare(o2.getFitness(), o1.getFitness()) ;
+						}
+					});
+					
+					//TODO: Asignar al vector de mejores el primer mancito
+//					bestChromosomes.add(chromosomes.get(0));
+//					if (bestChromosomes.size()>1) {
+//						int pos = bestChromosomes.size()-1;
+//						double diff = Math.abs(bestChromosomes.get(pos).getFitness()- bestChromosomes.get(pos).getFitness())/
+//								bestChromosomes.get(pos).getFitness();
+//						if(diff<threshold) {
+//							iterations++;
+//						}
+//					}else {
+//						iterations++;
+//					}
 					//Create the first new generation with the elitism rate and population
 					for(int i = 0; i < elit; i++) {
 						newGeneration.add(chromosomes.get(i));
@@ -385,17 +413,12 @@ public class CustomerServiceSupervisor extends Agent{
 				}
 
 				break;
-
-			case 7:
-				System.out.println("Iterations and genetic algorithm terminated...");
-				block();
-				break;
 			}
 		}
 
 		@Override
 		public boolean done() {
-			return false;
+			return (step==7);
 		}
 
 		public void enviarHora(AID agente) {
