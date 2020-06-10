@@ -3,7 +3,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -29,7 +28,6 @@ public class CustomerServiceSupervisor extends Agent{
 	private HashMap<String, Integer> actA = new HashMap<String, Integer>();
 	private HashMap<String, Integer> actB = new HashMap<String, Integer>();
 	private HashMap<String, Integer> actC = new HashMap<String, Integer>();
-	private HashMap<String, Integer> totalDemand = new HashMap<String, Integer>();
 	private HashMap<String, String> breaks = new HashMap<String, String>();
 	private ArrayList<Fathers> fathersSelected;
 	private CSSupervisorGUI myGui;
@@ -84,19 +82,6 @@ public class CustomerServiceSupervisor extends Agent{
 				String hour = data[0].trim();
 				int demand = Integer.parseInt(data[1].trim());
 				this.actC.put(hour, demand);
-				line = br.readLine();
-			}
-
-			br.close();
-
-			br = new BufferedReader(new FileReader(new File("./TotalDemand.csv")));
-			line = br.readLine();
-
-			while(line != null) {
-				String [] data = line.split(";");
-				String hour = data[0].trim();
-				int demand = Integer.parseInt(data[1].trim());
-				this.totalDemand.put(hour, demand);
 				line = br.readLine();
 			}
 
@@ -219,7 +204,7 @@ public class CustomerServiceSupervisor extends Agent{
 				setContainer(getContainerController());
 				chromosomes = new ArrayList<Chromosome>();
 				bestChromosomes = new ArrayList<Chromosome>();
-				//Search for the Custemer Service Agents
+				//Search for the Customer Service Agents
 				DFAgentDescription template = new DFAgentDescription();
 				ServiceDescription sd = new ServiceDescription();
 				sd.setType("report-timeslot");
@@ -297,7 +282,7 @@ public class CustomerServiceSupervisor extends Agent{
 				if (reply != null) {
 					int chrom;
 					Object[] info = null;
-					String[][] config = new String[7][2];
+					String[][] config = new String[8][2];
 					try {
 						info = (Object[]) reply.getContentObject();
 					} catch (UnreadableException e) {
@@ -381,7 +366,7 @@ public class CustomerServiceSupervisor extends Agent{
 					
 					//TODO: Asignar al vector de mejores el primer mancito
 					bestChromosomes.add(chromosomes.get(0));
-					if (bestChromosomes.size()>1) {
+					if (bestChromosomes.size() > 1) {
 						int pos = bestChromosomes.size()-1;
 						double diff = Math.abs(bestChromosomes.get(pos).getFitness()- bestChromosomes.get(pos-1).getFitness())/
 								bestChromosomes.get(pos).getFitness();
@@ -389,7 +374,11 @@ public class CustomerServiceSupervisor extends Agent{
 							System.out.println("I have "+iterations+" iterations");
 							iterations++;
 						}
+						else {
+							iterations = 0;
+						}
 					}else {
+						
 						iterations++;
 					}
 					//Create the first new generation with the elitism rate and population
@@ -434,7 +423,7 @@ public class CustomerServiceSupervisor extends Agent{
 
 		@Override
 		public boolean done() {
-			return (step==8);
+			return (step == 8);
 		}
 
 		public void enviarHora(AID agente) {
@@ -461,6 +450,10 @@ public class CustomerServiceSupervisor extends Agent{
 			cfp.setConversationId("best-schedule");
 			timeslots= bestChromosomes.get(bestChromosomes.size()-1).getTimesolts();
 			bestFo = bestChromosomes.get(bestChromosomes.size()-1).getFO();
+			System.out.println("Unatended A: " + bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandA());
+			System.out.println("Unatended B: " + bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandB());
+			System.out.println("Unatended C: " + bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandC());
+			System.out.println("Max demand: " + bestChromosomes.get(bestChromosomes.size() - 1).getMaxDemand());
 			Object[] params = {timeslots,bestFo};
 			try {
 				cfp.setContentObject(params);

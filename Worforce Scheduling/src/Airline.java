@@ -58,7 +58,6 @@ public class Airline extends Agent{
 		} catch (StaleProxyException e) {
 			System.out.println("StaleProxyException: " + e.getMessage());
 		}
-		setMyInterface(new AirlineGUI(this));
 		//Offer service of agent
 		DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
@@ -82,10 +81,18 @@ public class Airline extends Agent{
 	public void setMyInterface(AirlineGUI myInterface) {
 		this.myInterface = myInterface;
 	}
+	
+	public void updateGUI(ArrayList<String[][]>schedule, double FO) {
+		setMyInterface(new AirlineGUI(this, schedule, FO));
+	}
+	
 	private class bestSchedule extends CyclicBehaviour {
+		
+		private static final long serialVersionUID = 1L;
 		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("best-schedule"),
 				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
 		
+		@SuppressWarnings("unchecked")
 		@Override
 		public void action() {
 			ACLMessage msg = myAgent.receive(mt);
@@ -97,7 +104,7 @@ public class Airline extends Agent{
 					args =  (Object[]) msg.getContentObject();
 					schedule = (ArrayList<String[][]>) args[0];
 					FO = (Double) args[1];
-					System.out.println("I am Airline, best FO from CSS is: "+FO);
+					updateGUI(schedule, FO);
 				} catch (UnreadableException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

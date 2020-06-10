@@ -5,6 +5,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
@@ -37,7 +38,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 	private JTable tblAgentes;
 	private Agent myAgent;
 	
-	public AirlineGUI(Agent a) {
+	public AirlineGUI(Agent a, ArrayList<String[][]> schedule, double FO) {
 		
 		myAgent = a;
 		menu = new JFrame();
@@ -47,7 +48,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		menu.getContentPane().setLayout(new BorderLayout());
 		menu.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-		String[] dataHeader = {"Agent Id", "Tuesday", "Wendsday", "Thurdsday", "Friday", "Saturday", "Sunday", "Monday"};
+		String[] dataHeader = {"Agent Id", "Tuesday", "Wendsday", "Thurdsday", "Friday", "Saturday", "Sunday", "Monday", "Tuesday"};
 		Vector<String> header = new Vector<String>(Arrays.asList(dataHeader));
 		Vector<String> view = new Vector<String>();
 		Vector<List<String>> agentData = new Vector<List<String>>();
@@ -70,7 +71,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		lblFOTotal.setBounds(177, 73, 100, 26);
 		add(lblFOTotal);
 		
-		txtFuncionObjetivo = new JTextField();
+		txtFuncionObjetivo = new JTextField("" + FO);
 		txtFuncionObjetivo.setBounds(336, 76, 167, 26);
 		txtFuncionObjetivo.setColumns(10);
 		txtFuncionObjetivo.setEditable(false);
@@ -82,7 +83,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		lblFOFaltantes.setBounds(177, 110, 150, 26);
 		add(lblFOFaltantes);
 		
-		txtFuncionObjetivoFaltantes = new JTextField();
+		txtFuncionObjetivoFaltantes = new JTextField("" + FO);
 		txtFuncionObjetivoFaltantes.setBounds(336, 110, 167, 26);
 		txtFuncionObjetivoFaltantes.setColumns(10);
 		txtFuncionObjetivoFaltantes.setEditable(false);
@@ -103,15 +104,19 @@ public class AirlineGUI extends JPanel implements WindowListener{
 				
 		//PRUEBA
 		for(int i = 0; i < 75; i++) {
+			
 			view = new Vector<String>();
 			view.add("Agent " + (i + 1));
-			view.add("");
-			view.add("");
-			view.add("");
-			view.add("");
-			view.add("");
-			view.add("");
-			view.add("");
+			String[][] sch = schedule.get(i);
+			String hour = sch[0][0].split(" ")[1];
+			for(int j = 0; j < 8; j++) {
+				if(sch[j][1].equalsIgnoreCase("LLLL")) {
+					view.add("Libre");
+				}else {
+					view.add("" + hour + "-" + sch[j][1].toLowerCase());
+				}
+			}
+
 			agentData.add(view);
 		}
 		

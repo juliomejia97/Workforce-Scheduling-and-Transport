@@ -49,6 +49,7 @@ public class CustomerServiceAgent extends Agent{
 		this.days.put("Sab", Boolean.parseBoolean(data[10].trim()));
 		this.days.put("Dom", Boolean.parseBoolean(data[11].trim()));
 		this.days.put("Lun", Boolean.parseBoolean(data[12].trim()));
+		this.days.put("Mar2", Boolean.parseBoolean(data[13].trim()));
 
 		System.out.println(this.name + " started...");
 
@@ -138,7 +139,7 @@ public class CustomerServiceAgent extends Agent{
 				if(position>0) {
 					position--;
 				}
-				config = new String[7][2];
+				config = new String[8][2];
 				date = getHour(hour);
 				selection = opcions.get(position);
 				for(Map.Entry<String, Boolean> actual: days.entrySet()) {
@@ -199,6 +200,14 @@ public class CustomerServiceAgent extends Agent{
 							config[6][1] = selection;
 						}else {
 							config[6][1] = "LLLL";
+						}
+						break;
+					case "Mar2":
+						config[7][0] = "Mar2 "+date;
+						if(value) {
+							config[7][1] = selection;
+						}else {
+							config[7][1] = "LLLL";
 						}
 						break;
 					default:
