@@ -3,6 +3,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -39,6 +40,7 @@ public class CustomerServiceSupervisor extends Agent{
 	private float threshold;
 	private int maxIteration;
 	private AID[] serviceAgents;
+	private AID[] airline;
 	private ArrayList<Chromosome> chromosomes;
 	private ContainerController container;
 	private ArrayList<Chromosome> bestChromosomes;
@@ -217,6 +219,7 @@ public class CustomerServiceSupervisor extends Agent{
 				setContainer(getContainerController());
 				chromosomes = new ArrayList<Chromosome>();
 				bestChromosomes = new ArrayList<Chromosome>();
+				//Search for the Custemer Service Agents
 				DFAgentDescription template = new DFAgentDescription();
 				ServiceDescription sd = new ServiceDescription();
 				sd.setType("report-timeslot");
@@ -226,6 +229,22 @@ public class CustomerServiceSupervisor extends Agent{
 					serviceAgents = new AID[result.length];
 					for (int i = 0; i < result.length; ++i) {
 						serviceAgents[i] = result[i].getName();
+					}
+
+
+				}catch (FIPAException fe) {
+					fe.printStackTrace();
+				}
+				//Search for Airline Agent
+				template= new DFAgentDescription();
+				sd = new ServiceDescription();
+				sd.setType("best-solution");
+				template.addServices(sd);
+				try {
+					DFAgentDescription[] result = DFService.search(myAgent, template);
+					airline = new AID[result.length];
+					for (int i = 0; i < result.length; ++i) {
+						airline[i] = result[i].getName();
 					}
 
 
@@ -340,26 +359,18 @@ public class CustomerServiceSupervisor extends Agent{
 				ArrayList<Chromosome> auxGeneration = new ArrayList<Chromosome>();
 				ArrayList<Boolean> auxBoolean = new ArrayList<Boolean>();
 				int elit = Math.round(population * elitRate);
-				double bestFO = 1000000000;
+				//double bestFO = 1000000000;
 				Random rand = new Random();
 				if(iterations == maxIteration) {
 					System.out.println("Finished iterating...");
-					System.out.println("The best chromosome is: "+chromosomes.get(0).getFO());
+					System.out.println("The best chromosome is: "+bestChromosomes.get(bestChromosomes.size()-1).getFO());
 					step = 7;
 					
 				} else {
-					iterations++;
-					System.out.println("Starting generation " + iterations + "...");
+					System.out.println("Starting generation " + (bestChromosomes.size()+1) + "...");
 					for(Chromosome actual: chromosomes) {
 						if (!actual.isFoCalculated()) actual.calculateSchedulingFO(actA, actB, actC, breaks);
 					}
-					
-					for(Chromosome actual:chromosomes) {
-						if(actual.getFO() < bestFO) {
-							bestFO = actual.getFO();
-						}
-					}
-					System.out.println("Best FO of last iteration: " + bestFO);
 					
 					//Sort by the fitness of each chromosome (High to low)
 					Collections.sort(chromosomes, new Comparator<Chromosome>() {
@@ -369,17 +380,18 @@ public class CustomerServiceSupervisor extends Agent{
 					});
 					
 					//TODO: Asignar al vector de mejores el primer mancito
-//					bestChromosomes.add(chromosomes.get(0));
-//					if (bestChromosomes.size()>1) {
-//						int pos = bestChromosomes.size()-1;
-//						double diff = Math.abs(bestChromosomes.get(pos).getFitness()- bestChromosomes.get(pos).getFitness())/
-//								bestChromosomes.get(pos).getFitness();
-//						if(diff<threshold) {
-//							iterations++;
-//						}
-//					}else {
-//						iterations++;
-//					}
+					bestChromosomes.add(chromosomes.get(0));
+					if (bestChromosomes.size()>1) {
+						int pos = bestChromosomes.size()-1;
+						double diff = Math.abs(bestChromosomes.get(pos).getFitness()- bestChromosomes.get(pos-1).getFitness())/
+								bestChromosomes.get(pos).getFitness();
+						if(diff<threshold) {
+							System.out.println("I have "+iterations+" iterations");
+							iterations++;
+						}
+					}else {
+						iterations++;
+					}
 					//Create the first new generation with the elitism rate and population
 					for(int i = 0; i < elit; i++) {
 						newGeneration.add(chromosomes.get(i));
@@ -413,12 +425,16 @@ public class CustomerServiceSupervisor extends Agent{
 				}
 
 				break;
+			case 7:
+				sendBestSolution();
+				step = 8;
+				break;
 			}
 		}
 
 		@Override
 		public boolean done() {
-			return (step==7);
+			return (step==8);
 		}
 
 		public void enviarHora(AID agente) {
@@ -437,6 +453,24 @@ public class CustomerServiceSupervisor extends Agent{
 				}
 			}
 		}
+		public void sendBestSolution() {
+			ArrayList<String[][]> timeslots;
+			Double bestFo;
+			ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
+			cfp.addReceiver(airline[0]);
+			cfp.setConversationId("best-schedule");
+			timeslots= bestChromosomes.get(bestChromosomes.size()-1).getTimesolts();
+			bestFo = bestChromosomes.get(bestChromosomes.size()-1).getFO();
+			Object[] params = {timeslots,bestFo};
+			try {
+				cfp.setContentObject(params);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			myAgent.send(cfp);
+		}
+		
 	}
 
 	public void selectFathers() {

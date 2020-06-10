@@ -3,8 +3,18 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+
 import jade.core.Agent;
 import jade.core.ProfileImpl;
+import jade.core.behaviours.CyclicBehaviour;
+import jade.domain.DFService;
+import jade.domain.FIPAException;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
+import jade.lang.acl.UnreadableException;
 import jade.wrapper.ContainerController;
 import jade.wrapper.StaleProxyException;
 
@@ -49,6 +59,20 @@ public class Airline extends Agent{
 			System.out.println("StaleProxyException: " + e.getMessage());
 		}
 		setMyInterface(new AirlineGUI(this));
+		//Offer service of agent
+		DFAgentDescription dfd = new DFAgentDescription();
+		dfd.setName(getAID());
+		ServiceDescription sd = new ServiceDescription();
+		sd.setType("best-solution");
+		sd.setName("JADE-scheduling");
+		dfd.addServices(sd);
+		try {
+			DFService.register(this, dfd);
+		}
+		catch (FIPAException fe) {
+			fe.printStackTrace();
+		}
+		addBehaviour(new bestSchedule());
 	}
 	
 	public AirlineGUI getMyInterface() {
@@ -57,5 +81,33 @@ public class Airline extends Agent{
 	
 	public void setMyInterface(AirlineGUI myInterface) {
 		this.myInterface = myInterface;
+	}
+	private class bestSchedule extends CyclicBehaviour {
+		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("best-schedule"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+		
+		@Override
+		public void action() {
+			ACLMessage msg = myAgent.receive(mt);
+			Object[] args;
+			ArrayList<String[][]> schedule;
+			Double FO;
+			if(msg!=null) {
+				try {
+					args =  (Object[]) msg.getContentObject();
+					schedule = (ArrayList<String[][]>) args[0];
+					FO = (Double) args[1];
+					System.out.println("I am Airline, best FO from CSS is: "+FO);
+				} catch (UnreadableException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+			}else {
+				block();
+			}
+			
+		}
+		
 	}
 }
