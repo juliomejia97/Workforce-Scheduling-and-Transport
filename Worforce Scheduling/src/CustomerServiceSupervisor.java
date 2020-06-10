@@ -346,40 +346,40 @@ public class CustomerServiceSupervisor extends Agent{
 					System.out.println("Finished iterating...");
 					System.out.println("The best chromosome is: "+chromosomes.get(0).getFO());
 					step = 7;
-					
+
 				} else {
 					iterations++;
 					System.out.println("Starting generation " + iterations + "...");
 					for(Chromosome actual: chromosomes) {
 						if (!actual.isFoCalculated()) actual.calculateSchedulingFO(actA, actB, actC, breaks);
 					}
-					
+
 					for(Chromosome actual:chromosomes) {
 						if(actual.getFO() < bestFO) {
 							bestFO = actual.getFO();
 						}
 					}
 					System.out.println("Best FO of last iteration: " + bestFO);
-					
+
 					//Sort by the fitness of each chromosome (High to low)
 					Collections.sort(chromosomes, new Comparator<Chromosome>() {
 						public int compare(Chromosome o1, Chromosome o2) {
 							return Double.compare(o2.getFitness(), o1.getFitness()) ;
 						}
 					});
-					
+
 					//TODO: Asignar al vector de mejores el primer mancito
-//					bestChromosomes.add(chromosomes.get(0));
-//					if (bestChromosomes.size()>1) {
-//						int pos = bestChromosomes.size()-1;
-//						double diff = Math.abs(bestChromosomes.get(pos).getFitness()- bestChromosomes.get(pos).getFitness())/
-//								bestChromosomes.get(pos).getFitness();
-//						if(diff<threshold) {
-//							iterations++;
-//						}
-//					}else {
-//						iterations++;
-//					}
+					//					bestChromosomes.add(chromosomes.get(0));
+					//					if (bestChromosomes.size()>1) {
+					//						int pos = bestChromosomes.size()-1;
+					//						double diff = Math.abs(bestChromosomes.get(pos).getFitness()- bestChromosomes.get(pos).getFitness())/
+					//								bestChromosomes.get(pos).getFitness();
+					//						if(diff<threshold) {
+					//							iterations++;
+					//						}
+					//					}else {
+					//						iterations++;
+					//					}
 					//Create the first new generation with the elitism rate and population
 					for(int i = 0; i < elit; i++) {
 						newGeneration.add(chromosomes.get(i));
@@ -408,7 +408,7 @@ public class CustomerServiceSupervisor extends Agent{
 					for(int i = 0; i < newGeneration.size(); i++) {
 						chromosomes.add(newGeneration.get(i));
 					}
-					
+
 					step = 4;
 				}
 
@@ -430,7 +430,7 @@ public class CustomerServiceSupervisor extends Agent{
 			for(int i=0; i < chromosomes.size(); i++) {
 				if(!chromosomes.get(i).isFoCalculated()) {
 					expectedReplies ++;
-					cfp.setContent(i+" "+chromosomes.get(i).getSolution().get(idAgent));
+					cfp.setContent(i + " " + chromosomes.get(i).getSolution().get(idAgent).toString());
 					myAgent.send(cfp);
 					mt = MessageTemplate.and(MessageTemplate.MatchConversationId("report-option"),
 							MessageTemplate.MatchPerformative(ACLMessage.INFORM));
@@ -438,6 +438,7 @@ public class CustomerServiceSupervisor extends Agent{
 			}
 		}
 	}
+
 
 	public void selectFathers() {
 		double ball;
@@ -453,7 +454,7 @@ public class CustomerServiceSupervisor extends Agent{
 			casino(rulette, ball, i);
 		}
 	}
-	
+
 	public void casino(ArrayList<Double> rulette, double ball, int pos) {
 		int papa1, papa2;
 		papa1 = 0;
@@ -490,6 +491,7 @@ public class CustomerServiceSupervisor extends Agent{
 		fathersSelected.add(new Fathers(papa1,papa2));
 	}
 
+
 	public void generateKids() {
 		Chromosome son1;
 		Chromosome son2;
@@ -512,47 +514,57 @@ public class CustomerServiceSupervisor extends Agent{
 		Chromosome father1 = chromosomes.get(couple.getFather1());
 		Chromosome father2 = chromosomes.get(couple.getFather2());
 		//Information solution of child 1
-		ArrayList<Double> solution1 = new ArrayList<Double>();
+		ArrayList<Solution> solution1 = new ArrayList<Solution>();
 		ArrayList<Integer> genoma = father1.getGenoma();
 		for (int i=0; i < father1.getSolution().size();i++) {
-			if(genoma.get(i)==0) {
+			if(genoma.get(i) == 0) {
 				solution1.add(father1.getSolution().get(i));
 			}else {
-				solution1.add(father1.getSolution().get(i)+father2.getSolution().get(i));
+				Solution newSol = new Solution();
+				newSol.setInitHour(father1.getSolution().get(i).getInitHour() + father2.getSolution().get(i).getInitHour());
+				newSol.setSlot1(father1.getSolution().get(i).getSlot1() + father2.getSolution().get(i).getSlot1());
+				newSol.setSlot2(father1.getSolution().get(i).getSlot2() + father2.getSolution().get(i).getSlot2());
+				newSol.setSlot3(father1.getSolution().get(i).getSlot3() + father2.getSolution().get(i).getSlot3());
+				newSol.setSlot4(father1.getSolution().get(i).getSlot4() + father2.getSolution().get(i).getSlot4());
+				newSol.setSlot5(father1.getSolution().get(i).getSlot5() + father2.getSolution().get(i).getSlot5());
+				newSol.setSlot6(father1.getSolution().get(i).getSlot6() + father2.getSolution().get(i).getSlot6());
+				newSol.setSlot7(father1.getSolution().get(i).getSlot7() + father2.getSolution().get(i).getSlot7());
+
+				solution1.add(newSol);
+
 			}
 		}
 		//Information solution of child 2
-		ArrayList<Double> solution2 = new ArrayList<Double>();
+		ArrayList<Solution> solution2 = new ArrayList<Solution>();
 		genoma = father2.getGenoma();
 		for (int i=0; i < father2.getSolution().size();i++) {
-			if(genoma.get(i)==0) {
+			if(genoma.get(i) == 0) {
 				solution2.add(father2.getSolution().get(i));
 			}else {
-				solution2.add(father1.getSolution().get(i)-father2.getSolution().get(i));
+				Solution newSol = new Solution();
+				newSol.setInitHour(father1.getSolution().get(i).getInitHour() - father2.getSolution().get(i).getInitHour());
+				newSol.setSlot1(father1.getSolution().get(i).getSlot1() - father2.getSolution().get(i).getSlot1());
+				newSol.setSlot2(father1.getSolution().get(i).getSlot2() - father2.getSolution().get(i).getSlot2());
+				newSol.setSlot3(father1.getSolution().get(i).getSlot3() - father2.getSolution().get(i).getSlot3());
+				newSol.setSlot4(father1.getSolution().get(i).getSlot4() - father2.getSolution().get(i).getSlot4());
+				newSol.setSlot5(father1.getSolution().get(i).getSlot5() - father2.getSolution().get(i).getSlot5());
+				newSol.setSlot6(father1.getSolution().get(i).getSlot6() - father2.getSolution().get(i).getSlot6());
+				newSol.setSlot7(father1.getSolution().get(i).getSlot7() - father2.getSolution().get(i).getSlot7());
+
+				solution2.add(newSol);			
 			}
 		}
-		//Fix by circular
-		//Child1 
-		for(int i=0; i < solution1.size();i++) {
-			if(solution1.get(i)>47) {
-				solution1.set(i, son1.roundTwoDecimals(solution1.get(i)%47, 2));
-			}
-		}
+
 		son1.setSolution(solution1);
-		//Child2
-		for(int i=0; i < solution2.size();i++) {
-			if(solution2.get(i)<0) {
-				solution2.set(i, son2.roundTwoDecimals(47+solution2.get(i), 2));
-			}
-		}
 		son2.setSolution(solution2);
 	}
+
 
 	public void mutateKids() {
 
 		double prob;
 		Random rand = new Random();
-		ArrayList<Double> solutionSwap;
+		ArrayList<Solution> solutionSwap;
 		for(int i=population+1;i < chromosomes.size(); i++) {
 			prob = rand.nextDouble();
 			if(prob < mutationRate) {
@@ -562,17 +574,17 @@ public class CustomerServiceSupervisor extends Agent{
 		}
 	}
 
-	public ArrayList<Double> mutate(Chromosome child) {
+	public ArrayList<Solution> mutate(Chromosome child) {
 
-		ArrayList<Double> swap = new ArrayList<Double>();
-		ArrayList<Double> sol = child.getSolution();
+		ArrayList<Solution> swap = new ArrayList<Solution>();
+		ArrayList<Solution> sol = child.getSolution();
 		Random rand = new Random();
 		int upper = serviceAgents.length;
 		int pos = rand.nextInt(upper);
 		for(int i=pos+1; i < sol.size();i++) {
 			swap.add(sol.get(i));
 		}
-		for(int i=0; i < pos+1;i++) {
+		for(int i=0; i < pos+1; i++) {
 			swap.add(sol.get(i));
 		}
 		return swap;

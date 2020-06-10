@@ -8,7 +8,7 @@ import java.util.Random;
 public class Chromosome implements Serializable{
 
 	private static final long serialVersionUID = 1L;
-	private ArrayList<Double> solution;
+	private ArrayList<Solution> solution;
 	private ArrayList<String[][]> timesolts;
 	private ArrayList<Integer> genoma;
 	private int id;
@@ -24,13 +24,13 @@ public class Chromosome implements Serializable{
 		this.fitness = 0;
 		this.fatherRate = 0;
 		this.foCalculated = false;
-		this.solution = new ArrayList<Double>();
+		this.solution = new ArrayList<Solution>();
 		this.timesolts = new ArrayList<String[][]>();
 		this.genoma = new ArrayList<Integer>();
 		for(int i=0; i < numAgents; i++) {
 			int_random = rand.nextInt(2);
 			this.timesolts.add(new String[7][2]);
-			this.solution.add(generateRandom());
+			this.solution.add(new Solution());
 			this.genoma.add(int_random);
 		}
 	}
@@ -218,11 +218,11 @@ public class Chromosome implements Serializable{
 
 	}
 
-	public ArrayList<Double> getSolution(){
+	public ArrayList<Solution> getSolution(){
 		return solution;
 	}
 
-	public void setSolution(ArrayList<Double> solution) {
+	public void setSolution(ArrayList<Solution> solution) {
 		this.solution = solution;
 	}
 
@@ -282,23 +282,5 @@ public class Chromosome implements Serializable{
 		this.genoma = genoma;
 	}
 	
-	public static double generateRandom(){
-		Random rand = new Random();
-		double upperbound = 47;
-		int lowestbound = 0;
-		double range = upperbound - lowestbound;
-		double number = rand.nextDouble() * range;
-		double shifted = number + lowestbound;
-		return roundTwoDecimals(shifted, 2);
-	}
-	
-	public static double roundTwoDecimals(double value,int places) {
-		
-		if (places < 0) throw new IllegalArgumentException();
 
-		long factor = (long) Math.pow(10, places);
-		value = value * factor;
-		long tmp = Math.round(value);
-		return (double) tmp / factor;
-	}
 }

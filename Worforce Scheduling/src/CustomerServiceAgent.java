@@ -119,28 +119,55 @@ public class CustomerServiceAgent extends Agent{
 
 		public void action() {
 			ACLMessage msg = myAgent.receive(mt);
-			Double proposal;
-			Double permutation;
 			int hour;
-			int position;
 			int chr;
+			int slot1;
+			int slot2;
+			int slot3;
+			int slot4;
+			int slot5;
+			int slot6;
+			int slot7;
 			String[][] config;
 			String message;
-			String selection;
 			String date;
 			if (msg != null) {
+				
 				message = (String) msg.getContent();
 				chr = Integer.parseInt(message.split(" ")[0]);
-				proposal = Double.parseDouble(message.split(" ")[1]);
-				permutation = proposal%1;
-				hour = (int) (proposal - permutation);
-				position = (int) Math.round(permutation*opcions.size());
-				if(position>0) {
-					position--;
+				hour = Integer.parseInt(message.split(" ")[1]); //Hora de inicio
+				slot1 = (int) Double.parseDouble(message.split(" ")[2]) * opcions.size();
+				if(slot1 > 0) {
+					slot1--;
 				}
+				slot2 = (int) Double.parseDouble(message.split(" ")[3]) * opcions.size();
+				if(slot2 > 0) {
+					slot2--;
+				}
+				slot3 = (int) Double.parseDouble(message.split(" ")[4]) * opcions.size();
+				if(slot3 > 0) {
+					slot3--;
+				}
+				slot4 = (int) Double.parseDouble(message.split(" ")[5]) * opcions.size();
+				if(slot4 > 0) {
+					slot4--;
+				}
+				slot5 = (int) Double.parseDouble(message.split(" ")[6]) * opcions.size();
+				if(slot5 > 0) {
+					slot5--;
+				}
+				slot6 = (int) Double.parseDouble(message.split(" ")[7]) * opcions.size();
+				if(slot6 > 0) {
+					slot6--;
+				}
+				slot7 = (int) Double.parseDouble(message.split(" ")[8]) * opcions.size();
+				if(slot7 > 0) {
+					slot7--;
+				}
+
+
 				config = new String[7][2];
 				date = getHour(hour);
-				selection = opcions.get(position);
 				for(Map.Entry<String, Boolean> actual: days.entrySet()) {
 					String key = actual.getKey();
 					Boolean value = actual.getValue();
@@ -148,7 +175,7 @@ public class CustomerServiceAgent extends Agent{
 					case "Mar":
 						config[0][0] = "Mar "+date;
 						if(value) {
-							config[0][1] = selection;
+							config[0][1] = opcions.get(slot1);
 						}else {
 							config[0][1] = "LLLL";
 						}
@@ -156,7 +183,7 @@ public class CustomerServiceAgent extends Agent{
 					case "Mie":
 						config[1][0] = "Mie "+date;
 						if(value) {
-							config[1][1] = selection;
+							config[1][1] = opcions.get(slot2);
 						}else {
 							config[1][1] = "LLLL";
 						}
@@ -164,7 +191,7 @@ public class CustomerServiceAgent extends Agent{
 					case "Jue":
 						config[2][0] = "Jue "+date;
 						if(value) {
-							config[2][1] = selection;
+							config[2][1] = opcions.get(slot3);
 						}else {
 							config[2][1] = "LLLL";
 						}
@@ -172,7 +199,7 @@ public class CustomerServiceAgent extends Agent{
 					case "Vie":
 						config[3][0] = "Vie "+date;
 						if(value) {
-							config[3][1] = selection;
+							config[3][1] = opcions.get(slot4);
 						}else {
 							config[3][1] = "LLLL";
 						}
@@ -180,7 +207,7 @@ public class CustomerServiceAgent extends Agent{
 					case "Sab":
 						config[4][0] = "Sab "+date;
 						if(value) {
-							config[4][1] = selection;
+							config[4][1] = opcions.get(slot5);
 						}else {
 							config[4][1] = "LLLL";
 						}
@@ -188,7 +215,7 @@ public class CustomerServiceAgent extends Agent{
 					case "Dom":
 						config[5][0] = "Dom "+date;
 						if(value) {
-							config[5][1] = selection;
+							config[5][1] = opcions.get(slot6);
 						}else {
 							config[5][1] = "LLLL";
 						}
@@ -196,7 +223,7 @@ public class CustomerServiceAgent extends Agent{
 					case "Lun":
 						config[6][0] = "Lun "+date;
 						if(value) {
-							config[6][1] = selection;
+							config[6][1] = opcions.get(slot7);
 						}else {
 							config[6][1] = "LLLL";
 						}
