@@ -6,14 +6,8 @@ import java.io.IOException;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Timer;
-
-import org.omg.CORBA.TIMEOUT;
-
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
-import jade.core.behaviours.WakerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -30,7 +24,7 @@ public class TransportSupervisor extends Agent {
 	private HashMap<String, ArrayList<Double>> vuelta;
 	private ArrayList<String[][]> timeSolt;
 	private TransportSupervisorGUI myGui;
-	
+
 	@Override
 	protected void setup(){
 		ida  = new HashMap<String, ArrayList<Double>>();
@@ -102,43 +96,45 @@ public class TransportSupervisor extends Agent {
 	}
 
 	private class routingAgent extends CyclicBehaviour{
+
+		private static final long serialVersionUID = 1L;
+		
 		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("routing"),
 				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
+		@SuppressWarnings("unchecked")
 		@Override
 		public void action() {
 			ACLMessage msg = myAgent.receive(mt);
-			if (msg!=null) {
-				System.out.println("Recibi alguito jiji");
+			if (msg != null) {
 				try {
 					setTimeSolt((ArrayList<String[][]>) msg.getContentObject());
 					extractPossibleRoutes();
-					for(Map.Entry<String, ArrayList<Double>> actual:ida.entrySet()) {
-						System.out.print(actual.getKey()+" ");
-						for(Double agent:actual.getValue()) {
-							System.out.print(agent);
-						}
-						System.out.println();
-					}
+					
 				} catch (UnreadableException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}else {
 				block();
 			}
 		}
-		
+
 	}
-	
+
 	public void extractPossibleRoutes() {
-		if(timeSolt!=null) {
+		
+		if(timeSolt != null) {
 			ArrayList<Double> agentsGoing;
 			ArrayList<Double> agentsReturn;
-			String info;
 			for(int i=0; i < timeSolt.size();i++) {
 				for(int j=0; j < 8;j++) {
-					info = timeSolt.get(i)[j][0];
-					if(needTransportForGoing(info)) {
+					String info = timeSolt.get(i)[j][0];
+					String day = timeSolt.get(i)[j][0].split(" ")[0];
+					String perm = timeSolt.get(i)[j][1];
+					String hour = timeSolt.get(i)[j][0].split(" ")[1];
+					LocalTime hourLT = LocalTime.of(Integer.parseInt(hour.split(":")[0]), 
+							Integer.parseInt(hour.split(":")[1]));
+					
+					if(needTransportForGoing(hourLT, perm)) {
 						if(ida.get(info) != null) {
 							agentsGoing = ida.get(info);
 							agentsGoing.add((double) (i+1));
@@ -149,25 +145,55 @@ public class TransportSupervisor extends Agent {
 							ida.put(info, agentsGoing);
 						}
 					}
+
+					if(needTransportForReturn(hourLT, perm)) {
+						
+						hourLT = hourLT.plusHours(9);
+						String newDay = day + " " + hourLT.toString();
+						
+						if(vuelta.get(newDay) != null) {
+							agentsReturn = vuelta.get(newDay);
+							agentsReturn.add((double) (i+1));
+							vuelta.put(newDay, agentsReturn);
+						}else {
+							agentsReturn = new ArrayList<Double>();
+							agentsReturn.add((double)i + 1);
+							vuelta.put(newDay, agentsReturn);
+						}
+					}
 				}
 			}
 		}
-		
 	}
-	public boolean needTransportForGoing(String infoDay){
-		String day;
-		LocalTime hour;
-		day = infoDay.split(" ")[0];
-		hour = LocalTime.of(Integer.parseInt(infoDay.split(" ")[1].split(":")[0]), 
-				Integer.parseInt(infoDay.split(" ")[1].split(":")[1]));
-		if(hour.compareTo(LocalTime.of(21, 0)) > 0 && 
-				hour.compareTo(LocalTime.of(6, 30)) < 0) {
-			return true;
+
+	public boolean needTransportForGoing(LocalTime hour, String perm){
+
+		if(hour.compareTo(LocalTime.of(21, 0)) >= 0 || 
+				hour.compareTo(LocalTime.of(6, 30)) <= 0) {
+			if(perm.equalsIgnoreCase("LLLL")) {
+				return false;
+			} else {
+				return true;
+			}
 		}else {
 			return false;
 		}
 	}
-//	public boolean needTransportForReturn(String infoDay) {
-//		
-//	}
+
+	public boolean needTransportForReturn(LocalTime hour, String perm) {
+
+		hour = hour.plusHours(9);
+		
+		if(hour.compareTo(LocalTime.of(21, 0)) >= 0 || 
+				hour.compareTo(LocalTime.of(6, 30)) <= 0) {
+			if(perm.equalsIgnoreCase("LLLL")) {
+				return false;
+			} else {
+				return true;
+			}
+		}else {
+			return false;
+		}
+	}
+
 }
