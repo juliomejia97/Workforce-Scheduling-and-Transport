@@ -3,11 +3,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
+import jade.core.AID;
 import jade.core.Agent;
 import jade.core.ProfileImpl;
 import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.OneShotBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -23,6 +26,8 @@ public class Airline extends Agent{
 	private static final long serialVersionUID = 1L;
 	private ContainerController container;
 	private AirlineGUI myInterface;
+	private AID transport;
+	private ArrayList<String[][]> timeslots;
 	@Override
 	protected void setup() {
 
@@ -97,19 +102,32 @@ public class Airline extends Agent{
 		public void action() {
 			ACLMessage msg = myAgent.receive(mt);
 			Object[] args;
-			ArrayList<String[][]> schedule;
+			ArrayList<String[][]> schedule = null;
 			Double FO;
 			if(msg!=null) {
 				try {
 					args =  (Object[]) msg.getContentObject();
 					schedule = (ArrayList<String[][]>) args[0];
+					timeslots = schedule;
 					FO = (Double) args[1];
 					updateGUI(schedule, FO);
 				} catch (UnreadableException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				
+				DFAgentDescription template = new DFAgentDescription();
+				ServiceDescription serviceD = new ServiceDescription();
+				serviceD.setType("route");
+				template.addServices(serviceD);
+				try {
+					DFAgentDescription[] result = DFService.search(myAgent, template);
+					transport = result[0].getName();
+					System.out.println(transport.getName());
+				} catch (FIPAException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				addBehaviour(new requestRouting());
 			}else {
 				block();
 			}
@@ -117,4 +135,23 @@ public class Airline extends Agent{
 		}
 		
 	}
+	private class requestRouting extends OneShotBehaviour{
+
+		@Override
+		public void action() {
+			ACLMessage cfp = new ACLMessage(ACLMessage.REQUEST);
+			cfp.addReceiver(transport);
+			cfp.setConversationId("routing");
+			try {
+				cfp.setContentObject(timeslots);
+				myAgent.send(cfp);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+		
+	}
+
 }
