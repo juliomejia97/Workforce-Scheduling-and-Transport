@@ -122,7 +122,6 @@ public class Airline extends Agent{
 				try {
 					DFAgentDescription[] result = DFService.search(myAgent, template);
 					transport = result[0].getName();
-					System.out.println(transport.getName());
 				} catch (FIPAException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

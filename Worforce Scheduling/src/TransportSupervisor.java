@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
+
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.DFService;
@@ -109,6 +111,26 @@ public class TransportSupervisor extends Agent {
 				try {
 					setTimeSolt((ArrayList<String[][]>) msg.getContentObject());
 					extractPossibleRoutes();
+					
+					System.out.println("Rutas ida");
+					System.out.println();
+					for(Map.Entry<String, ArrayList<Double>> actual: ida.entrySet()) {
+						System.out.print(actual.getKey() + " ");
+						for(double agent: actual.getValue()) {
+							System.out.print(agent + " ");
+						}
+						System.out.println();
+					}
+					
+					System.out.println("Rutas vuelta");
+					System.out.println();
+					for(Map.Entry<String, ArrayList<Double>> actual: vuelta.entrySet()) {
+						System.out.print(actual.getKey() + " ");
+						for(double agent: actual.getValue()) {
+							System.out.print(agent + " ");
+						}
+						System.out.println();
+					}
 					
 				} catch (UnreadableException e) {
 					e.printStackTrace();
