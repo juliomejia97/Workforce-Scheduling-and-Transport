@@ -1,3 +1,7 @@
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,6 +27,7 @@ public class CustomerServiceAgent extends Agent{
 	private boolean actB;
 	private boolean actC;
 	private HashMap<String, Boolean> days = new HashMap<String, Boolean>();
+	private ArrayList<Double> distances = new ArrayList<Double>();
 	private String activities;
 	private ArrayList<String> opcions;
 	@Override
@@ -50,6 +55,28 @@ public class CustomerServiceAgent extends Agent{
 		this.days.put("Dom", Boolean.parseBoolean(data[11].trim()));
 		this.days.put("Lun", Boolean.parseBoolean(data[12].trim()));
 		this.days.put("Mar2", Boolean.parseBoolean(data[13].trim()));
+		
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(new File("./Distances.csv")));
+			String line = br.readLine();
+			while(line != null) {
+				String [] distLine = line.split(";");
+				if(distLine[0].equalsIgnoreCase(this.name)) {
+					for(int i = 1; i < distLine.length; i++) {
+						this.distances.add(Double.parseDouble(distLine[i].trim()));
+					}
+				}
+				line = br.readLine();
+			}
+			
+			br.close();
+		
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 
 		System.out.println(this.name + " started...");
 

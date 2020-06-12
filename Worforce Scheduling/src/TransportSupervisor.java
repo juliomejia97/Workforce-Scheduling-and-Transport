@@ -26,12 +26,15 @@ public class TransportSupervisor extends Agent {
 	private HashMap<String, ArrayList<Double>> vuelta;
 	private ArrayList<String[][]> timeSolt;
 	private TransportSupervisorGUI myGui;
+	private Double[][] distances;
 
 	@Override
 	protected void setup(){
 		ida  = new HashMap<String, ArrayList<Double>>();
 		vuelta = new HashMap<String, ArrayList<Double>>();
+		distances = new Double[76][76];
 		try {
+			int countDistances = 0;
 			BufferedReader br;
 			br = new BufferedReader(new FileReader(new File("./Coordenates.csv")));
 			String line = br.readLine();
@@ -48,6 +51,27 @@ public class TransportSupervisor extends Agent {
 			}
 
 			br.close();
+			
+			br = new BufferedReader(new FileReader(new File("./Distances.csv")));
+			line = br.readLine();
+
+			while(line != null) {
+				String []data = line.split(";");
+				for(int i = 1; i < data.length; i++) {
+					this.distances[countDistances][i - 1] = Double.parseDouble(data[i].trim());
+				}
+				line = br.readLine();
+				countDistances++;
+			}
+
+			br.close();
+			
+			for(int i = 0; i < 76; i++) {
+				System.out.println();
+				for(int j = 0; j < 76; j++) {
+					System.out.print(this.distances[i][j] + " ");
+				}
+			}
 
 
 		} catch (FileNotFoundException e) {
