@@ -307,7 +307,7 @@ public class CustomerServiceSupervisor extends Agent{
 				}
 				else {
 					System.out.println("***************");
-					block();
+					block(10000);
 				}
 				break;
 			case 3:

@@ -3,12 +3,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import jade.core.AID;
 import jade.core.Agent;
+import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
@@ -22,16 +25,17 @@ public class TransportSupervisor extends Agent {
 
 	private static final long serialVersionUID = 1L;
 	private HashMap<String, String[]> coordenates = new HashMap<String, String[]>();
-	private HashMap<String, ArrayList<Double>> ida;
-	private HashMap<String, ArrayList<Double>> vuelta;
+	private HashMap<String, ArrayList<Integer>> ida;
+	private HashMap<String, ArrayList<Integer>> vuelta;
 	private ArrayList<String[][]> timeSolt;
 	private TransportSupervisorGUI myGui;
 	private Double[][] distances;
+	private AID[] agents;
 
 	@Override
 	protected void setup(){
-		ida  = new HashMap<String, ArrayList<Double>>();
-		vuelta = new HashMap<String, ArrayList<Double>>();
+		ida  = new HashMap<String, ArrayList<Integer>>();
+		vuelta = new HashMap<String, ArrayList<Integer>>();
 		distances = new Double[76][76];
 		try {
 			int countDistances = 0;
@@ -65,14 +69,6 @@ public class TransportSupervisor extends Agent {
 			}
 
 			br.close();
-			
-			for(int i = 0; i < 76; i++) {
-				System.out.println();
-				for(int j = 0; j < 76; j++) {
-					System.out.print(this.distances[i][j] + " ");
-				}
-			}
-
 
 		} catch (FileNotFoundException e) {
 			System.out.println("FileNotFoundException: " + e.getMessage());
@@ -97,19 +93,19 @@ public class TransportSupervisor extends Agent {
 		addBehaviour(new routingAgent());
 	}
 
-	public HashMap<String, ArrayList<Double>> getIda() {
+	public HashMap<String, ArrayList<Integer>> getIda() {
 		return ida;
 	}
 
-	public void setIda(HashMap<String, ArrayList<Double>> ida) {
+	public void setIda(HashMap<String, ArrayList<Integer>> ida) {
 		this.ida = ida;
 	}
 
-	public HashMap<String, ArrayList<Double>> getVuelta() {
+	public HashMap<String, ArrayList<Integer>> getVuelta() {
 		return vuelta;
 	}
 
-	public void setVuelta(HashMap<String, ArrayList<Double>> vuelta) {
+	public void setVuelta(HashMap<String, ArrayList<Integer>> vuelta) {
 		this.vuelta = vuelta;
 	}
 
@@ -136,29 +132,25 @@ public class TransportSupervisor extends Agent {
 					setTimeSolt((ArrayList<String[][]>) msg.getContentObject());
 					extractPossibleRoutes();
 					
-					System.out.println("Rutas ida");
-					System.out.println();
-					for(Map.Entry<String, ArrayList<Double>> actual: ida.entrySet()) {
-						System.out.print(actual.getKey() + " ");
-						for(double agent: actual.getValue()) {
-							System.out.print(agent + " ");
-						}
-						System.out.println();
-					}
-					
-					System.out.println("Rutas vuelta");
-					System.out.println();
-					for(Map.Entry<String, ArrayList<Double>> actual: vuelta.entrySet()) {
-						System.out.print(actual.getKey() + " ");
-						for(double agent: actual.getValue()) {
-							System.out.print(agent + " ");
-						}
-						System.out.println();
-					}
-					
 				} catch (UnreadableException e) {
 					e.printStackTrace();
 				}
+				//Get agents in the platform
+				DFAgentDescription template = new DFAgentDescription();
+				ServiceDescription serviceD = new ServiceDescription();
+				serviceD.setType("transport");
+				template.addServices(serviceD);
+				try {
+					DFAgentDescription[] result = DFService.search(myAgent, template);
+					agents = new AID[result.length];
+					for(int i=0; i < result.length;i++) {
+						agents[i] = result[i].getName();
+					}
+				} catch (FIPAException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				addBehaviour(new routing());
 			}else {
 				block();
 			}
@@ -169,8 +161,8 @@ public class TransportSupervisor extends Agent {
 	public void extractPossibleRoutes() {
 		
 		if(timeSolt != null) {
-			ArrayList<Double> agentsGoing;
-			ArrayList<Double> agentsReturn;
+			ArrayList<Integer> agentsGoing;
+			ArrayList<Integer> agentsReturn;
 			for(int i=0; i < timeSolt.size();i++) {
 				for(int j=0; j < 8;j++) {
 					String info = timeSolt.get(i)[j][0];
@@ -183,11 +175,11 @@ public class TransportSupervisor extends Agent {
 					if(needTransportForGoing(hourLT, perm)) {
 						if(ida.get(info) != null) {
 							agentsGoing = ida.get(info);
-							agentsGoing.add((double) (i+1));
+							agentsGoing.add((i+1));
 							ida.put(info, agentsGoing);
 						}else {
-							agentsGoing = new ArrayList<Double>();
-							agentsGoing.add((double)i + 1);
+							agentsGoing = new ArrayList<Integer>();
+							agentsGoing.add(i + 1);
 							ida.put(info, agentsGoing);
 						}
 					}
@@ -199,11 +191,11 @@ public class TransportSupervisor extends Agent {
 						
 						if(vuelta.get(newDay) != null) {
 							agentsReturn = vuelta.get(newDay);
-							agentsReturn.add((double) (i+1));
+							agentsReturn.add((i+1));
 							vuelta.put(newDay, agentsReturn);
 						}else {
-							agentsReturn = new ArrayList<Double>();
-							agentsReturn.add((double)i + 1);
+							agentsReturn = new ArrayList<Integer>();
+							agentsReturn.add(i + 1);
 							vuelta.put(newDay, agentsReturn);
 						}
 					}
@@ -239,6 +231,135 @@ public class TransportSupervisor extends Agent {
 			}
 		}else {
 			return false;
+		}
+	}
+	
+	private class routing extends Behaviour{
+		private int step = 0;
+		private HashMap<String, ArrayList<Integer>> leadersGoing;
+		private HashMap<String, ArrayList<Integer>> leadersReturn;
+		@Override
+		public void action() {
+			switch (step) {
+			case 0:
+				//Generate leaders
+				leadersGoing = GenerateLeadersGoing();
+				leadersReturn = GenerateLeadersReturn();
+				step=1;
+				break;
+			case 1:
+				//Send to leaders and no leaders the quality of message that the must recive
+				sendMessageLeadersGoing();
+				block();
+				//sendMessageNoLeaders();
+				break;
+			case 2:
+				//Recive the message of leaders
+				//Going and return leaders
+				break;
+			case 3:
+				//Fix if there is an agent without car
+				break;
+			case 4:
+				//Send solution to airline
+				break;
+			default:
+				break;
+			}
+			
+		}
+
+		@Override
+		public boolean done() {
+			return (step==5);
+		}
+		private HashMap<String, ArrayList<Integer>> GenerateLeadersGoing(){
+			int numCars;
+			HashMap<String, ArrayList<Integer>> leaders = new HashMap<String, ArrayList<Integer>>();
+			for(Map.Entry<String, ArrayList<Integer>> actual:ida.entrySet()) {
+				numCars = (int) Math.ceil((double)actual.getValue().size()/3);
+				leaders.put(actual.getKey(), getLeaderGoing(actual.getValue(), numCars));
+			}
+			return leaders;
+		}
+		
+		private HashMap<String, ArrayList<Integer>> GenerateLeadersReturn(){
+			int numCars;
+			HashMap<String, ArrayList<Integer>> leaders = new HashMap<String, ArrayList<Integer>>();
+			for(Map.Entry<String, ArrayList<Integer>> actual:vuelta.entrySet()) {
+				numCars = (int) Math.ceil((double)actual.getValue().size()/3);
+				leaders.put(actual.getKey(), getLeaderReturn(actual.getValue(), numCars));
+			}
+			return leaders;
+		}
+		
+		private ArrayList<Integer> getLeaderGoing(ArrayList<Integer> agents, int cantLeaders){
+			int leader = -1;
+			ArrayList<Integer> lst = new ArrayList<Integer>();
+			double farLeader = 0;
+			int i=0;
+			while(i < cantLeaders) {
+				leader = -1;
+				farLeader = 0;
+				for(int actual:agents) {
+					if(distances[actual][0]>farLeader && !lst.contains(actual)) {
+						leader = actual;
+						farLeader = distances[actual][0];
+					}
+				}
+				lst.add(leader);
+				i++;
+			}
+			return lst;
+		}
+		private ArrayList<Integer> getLeaderReturn(ArrayList<Integer> agents, int cantLeaders){
+			int leader = -1;
+			ArrayList<Integer> lst = new ArrayList<Integer>();
+			double farLeader = 100000;
+			int i=0;
+			while(i < cantLeaders) {
+				leader = -1;
+				farLeader = 100000;
+				for(int actual:agents) {
+					if(distances[0][actual]<farLeader && !lst.contains(actual)) {
+						leader = actual;
+						farLeader = distances[0][actual];
+					}
+				}
+				lst.add(leader);
+				i++;
+			}
+			return lst;
+		}
+		private void sendMessageLeadersGoing() {
+			for(Map.Entry<String, ArrayList<Integer>> actual:leadersGoing.entrySet()) {
+				for(Integer agent:actual.getValue()) {
+					AID recep= getAgent(agent);
+					ACLMessage msg = new ACLMessage(ACLMessage.QUERY_REF);
+					msg.setConversationId("route-as-leaderGoing");
+					if(recep!=null) {
+						msg.addReceiver(recep);
+						Object[] args = {actual.getKey(),ida.get(actual.getKey())};
+						try {
+							msg.setContentObject(args);
+							myAgent.send(msg);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}	
+				}
+			}
+		}
+		private AID getAgent(int numAgente) {
+			int idAgent;
+			for(AID actual:agents) {
+				idAgent = Integer.parseInt(actual.getName().split("@")[0].split(" ")[1]);
+				if(idAgent == numAgente) {
+					return actual;
+				}
+			}
+			return null;
 		}
 	}
 

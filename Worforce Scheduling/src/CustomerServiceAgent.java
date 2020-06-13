@@ -15,6 +15,7 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+import jade.lang.acl.UnreadableException;
 
 public class CustomerServiceAgent extends Agent{
 
@@ -87,6 +88,10 @@ public class CustomerServiceAgent extends Agent{
 		sd.setType("report-timeslot");
 		sd.setName("JADE-scheduling");
 		dfd.addServices(sd);
+		ServiceDescription sd2 = new ServiceDescription();
+		sd2.setType("transport");
+		sd2.setName("JADE-transport");
+		dfd.addServices(sd2);
 		try {
 			DFService.register(this, dfd);
 		}
@@ -95,6 +100,7 @@ public class CustomerServiceAgent extends Agent{
 		}
 		GeneratePossiblesActivities();
 		addBehaviour(new TimeSlotConfiguration());
+		addBehaviour(new asLeaderGoing());
 	}
 
 	public double getCoorX() {
@@ -276,4 +282,40 @@ public class CustomerServiceAgent extends Agent{
 			return select;
 		}
 	} 
+	private class asLeaderGoing extends CyclicBehaviour {
+		HashMap<String, ArrayList<Integer>> posibilities = new HashMap<String, ArrayList<Integer>>();
+		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("route-as-leaderGoing"),
+				MessageTemplate.MatchPerformative(ACLMessage.QUERY_REF));
+		int countRec = 0;
+		@Override
+		public void action() {
+			ACLMessage msg = myAgent.receive(mt);
+			Object[] content;
+			String hour;
+			ArrayList<Integer> options;
+			int myId = Integer.parseInt(name.split(" ")[1]);
+			if(msg!=null) {
+				try {
+					content = (Object[]) msg.getContentObject();
+					hour = (String) content[0];
+					options = (ArrayList<Integer>) content[1];
+					System.out.println(hour+" "+options.size()+" "+" my id: "+myId);
+					for(Integer actual:options) {
+						System.out.print(actual+" ");
+					}
+					System.out.println();
+					posibilities.put(hour, options);
+					
+				} catch (UnreadableException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+			}else {
+				block();
+			}
+			
+		}
+		
+	}
 }
