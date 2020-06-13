@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
+import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
@@ -28,9 +30,11 @@ public class CustomerServiceAgent extends Agent{
 	private boolean actB;
 	private boolean actC;
 	private HashMap<String, Boolean> days = new HashMap<String, Boolean>();
+	private HashMap<String, Integer> expectedProposesGoing = new HashMap<String, Integer>();
 	private ArrayList<Double> distances = new ArrayList<Double>();
 	private String activities;
 	private ArrayList<String> opcions;
+	
 	@Override
 	protected void setup() {
 		activities = "";
@@ -92,6 +96,10 @@ public class CustomerServiceAgent extends Agent{
 		sd2.setType("transport");
 		sd2.setName("JADE-transport");
 		dfd.addServices(sd2);
+		ServiceDescription sd3 = new ServiceDescription();
+		sd3.setType("situation");
+		sd3.setName("JADE-transport");
+		dfd.addServices(sd3);
 		try {
 			DFService.register(this, dfd);
 		}
@@ -101,6 +109,8 @@ public class CustomerServiceAgent extends Agent{
 		GeneratePossiblesActivities();
 		addBehaviour(new TimeSlotConfiguration());
 		addBehaviour(new asLeaderGoing());
+		addBehaviour(new ReceiveMessageFromLeaders());
+		addBehaviour(new ReceiveExpectedProposesGoing());
 	}
 
 	public double getCoorX() {
@@ -264,6 +274,7 @@ public class CustomerServiceAgent extends Agent{
 				block();
 			}
 		}
+		
 		public String getHour(int hour) {
 			String select;
 			select = "";
@@ -283,38 +294,135 @@ public class CustomerServiceAgent extends Agent{
 		}
 	} 
 	private class asLeaderGoing extends CyclicBehaviour {
-		HashMap<String, ArrayList<Integer>> posibilities = new HashMap<String, ArrayList<Integer>>();
+		
+		HashMap<String, ArrayList<AID>> posibilities = new HashMap<String, ArrayList<AID>>();
 		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("route-as-leaderGoing"),
 				MessageTemplate.MatchPerformative(ACLMessage.QUERY_REF));
-		int countRec = 0;
+						
+		@SuppressWarnings("unchecked")
 		@Override
 		public void action() {
 			ACLMessage msg = myAgent.receive(mt);
 			Object[] content;
-			String hour;
+			String dayHour;
 			ArrayList<Integer> options;
-			int myId = Integer.parseInt(name.split(" ")[1]);
+			Integer myId = Integer.parseInt(name.split(" ")[1]);
 			if(msg!=null) {
+				
 				try {
 					content = (Object[]) msg.getContentObject();
-					hour = (String) content[0];
+					dayHour = (String) content[0];
 					options = (ArrayList<Integer>) content[1];
-					System.out.println(hour+" "+options.size()+" "+" my id: "+myId);
-					for(Integer actual:options) {
-						System.out.print(actual+" ");
-					}
-					System.out.println();
-					posibilities.put(hour, options);
+					searchAgents(dayHour, options);
 					
+					System.out.println("Soy el lider " + name);
+					for(Map.Entry<String, ArrayList<AID>> actual: posibilities.entrySet()) {
+						System.out.print(actual.getKey() + " ");
+						for(AID agent: actual.getValue()) {
+							System.out.print(agent.getName() + " ");
+						}
+						System.out.println();
+					}
+					
+					sendProposals(dayHour);
+										
 				} catch (UnreadableException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				
 			}else {
 				block();
 			}
+		}
+		
+		public void searchAgents(String dayHour, ArrayList<Integer> agents) {
 			
+			DFAgentDescription template = new DFAgentDescription();
+			ServiceDescription serviceD = new ServiceDescription();
+			serviceD.setType("situation");
+			template.addServices(serviceD);
+			try {
+				DFAgentDescription[] result = DFService.search(myAgent, template);
+				for(int i=0; i < result.length; i++) {
+					Integer id = Integer.parseInt(result[i].getName().getName().split("@")[0].split(" ")[1]);
+					if(agents.contains(id)) {
+						if(posibilities.get(dayHour) != null) {
+							ArrayList<AID> aux = this.posibilities.get(dayHour);
+							aux.add(result[i].getName());
+							this.posibilities.put(dayHour, aux);
+						}else {
+							ArrayList<AID> aux = new ArrayList<AID>();
+							aux.add(result[i].getName());
+							this.posibilities.put(dayHour, aux);
+						}
+					}
+
+				}
+			} catch (FIPAException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		public void sendProposals(String dayHour) {
+			
+			ArrayList<AID> agents = this.posibilities.get(dayHour);
+			for(AID actual: agents) {
+				ACLMessage msg = new ACLMessage(ACLMessage.PROPOSE);
+				msg.setConversationId("propose-car");
+				msg.addReceiver(actual);
+				msg.setContent("Hola quiero una respuesta tuya");
+				myAgent.send(msg);
+			}
+
+		}
+		
+	}
+	
+	private class ReceiveExpectedProposesGoing extends CyclicBehaviour {
+		
+		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("inform-size-leaders-going"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+
+		@Override
+		public void action() {
+			
+			ACLMessage msg = myAgent.receive(mt);
+			if(msg != null) {
+				try {
+					Object[] param = (Object[]) msg.getContentObject();
+					String dayHour = param[0].toString();
+					int cantReplies = Integer.parseInt(param[1].toString());
+					expectedProposesGoing.put(dayHour, cantReplies);
+				} catch (UnreadableException e) {
+					e.printStackTrace();
+				}
+				
+				
+				
+			}else {
+				block();
+			}
+		}
+		
+	}
+	
+	private class ReceiveMessageFromLeaders extends CyclicBehaviour {
+		
+		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("propose-car"),
+				MessageTemplate.MatchPerformative(ACLMessage.PROPOSE));
+
+		@Override
+		public void action() {
+			
+			ACLMessage msg = myAgent.receive(mt);
+			if(msg != null) {
+				int idAgent = Integer.parseInt(msg.getSender().getName().split("@")[0].split(" ")[1]);
+				System.out.print("El lider " + msg.getSender().getName() + " me ha enviado un mensaje de propuesta. Yo soy el agente: " + name);
+				System.out.print(" Nuestra distancia es: " + distances.get(idAgent));
+				System.out.println();
+			}else {
+				block();
+			}
 		}
 		
 	}
