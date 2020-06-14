@@ -31,10 +31,11 @@ public class CustomerServiceAgent extends Agent{
 	private boolean actC;
 	private HashMap<String, Boolean> days = new HashMap<String, Boolean>();
 	private HashMap<String, Integer> expectedProposesGoing = new HashMap<String, Integer>();
+	private HashMap<String, Integer> expectedRepliesGoing = new HashMap<String, Integer>();
 	private ArrayList<Double> distances = new ArrayList<Double>();
 	private String activities;
 	private ArrayList<String> opcions;
-	
+
 	@Override
 	protected void setup() {
 		activities = "";
@@ -60,7 +61,7 @@ public class CustomerServiceAgent extends Agent{
 		this.days.put("Dom", Boolean.parseBoolean(data[11].trim()));
 		this.days.put("Lun", Boolean.parseBoolean(data[12].trim()));
 		this.days.put("Mar2", Boolean.parseBoolean(data[13].trim()));
-		
+
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(new File("./Distances.csv")));
 			String line = br.readLine();
@@ -73,15 +74,15 @@ public class CustomerServiceAgent extends Agent{
 				}
 				line = br.readLine();
 			}
-			
+
 			br.close();
-		
+
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 
 		System.out.println(this.name + " started...");
 
@@ -111,6 +112,7 @@ public class CustomerServiceAgent extends Agent{
 		addBehaviour(new asLeaderGoing());
 		addBehaviour(new ReceiveMessageFromLeaders());
 		addBehaviour(new ReceiveExpectedProposesGoing());
+		addBehaviour(new ReceiveDecisionsGoing());
 	}
 
 	public double getCoorX() {
@@ -274,7 +276,7 @@ public class CustomerServiceAgent extends Agent{
 				block();
 			}
 		}
-		
+
 		public String getHour(int hour) {
 			String select;
 			select = "";
@@ -294,11 +296,11 @@ public class CustomerServiceAgent extends Agent{
 		}
 	} 
 	private class asLeaderGoing extends CyclicBehaviour {
-		
+
 		HashMap<String, ArrayList<AID>> posibilities = new HashMap<String, ArrayList<AID>>();
 		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("route-as-leaderGoing"),
 				MessageTemplate.MatchPerformative(ACLMessage.QUERY_REF));
-						
+
 		@SuppressWarnings("unchecked")
 		@Override
 		public void action() {
@@ -308,35 +310,26 @@ public class CustomerServiceAgent extends Agent{
 			ArrayList<Integer> options;
 			Integer myId = Integer.parseInt(name.split(" ")[1]);
 			if(msg!=null) {
-				
+
 				try {
 					content = (Object[]) msg.getContentObject();
 					dayHour = (String) content[0];
 					options = (ArrayList<Integer>) content[1];
+					expectedRepliesGoing.put(dayHour, options.size());
 					searchAgents(dayHour, options);
-					
-					System.out.println("Soy el lider " + name);
-					for(Map.Entry<String, ArrayList<AID>> actual: posibilities.entrySet()) {
-						System.out.print(actual.getKey() + " ");
-						for(AID agent: actual.getValue()) {
-							System.out.print(agent.getName() + " ");
-						}
-						System.out.println();
-					}
-					
 					sendProposals(dayHour);
-										
+
 				} catch (UnreadableException e) {
 					e.printStackTrace();
 				}
-				
+
 			}else {
 				block();
 			}
 		}
-		
+
 		public void searchAgents(String dayHour, ArrayList<Integer> agents) {
-			
+
 			DFAgentDescription template = new DFAgentDescription();
 			ServiceDescription serviceD = new ServiceDescription();
 			serviceD.setType("situation");
@@ -362,30 +355,114 @@ public class CustomerServiceAgent extends Agent{
 				e.printStackTrace();
 			}
 		}
-		
+
 		public void sendProposals(String dayHour) {
-			
+
 			ArrayList<AID> agents = this.posibilities.get(dayHour);
 			for(AID actual: agents) {
 				ACLMessage msg = new ACLMessage(ACLMessage.PROPOSE);
 				msg.setConversationId("propose-car");
 				msg.addReceiver(actual);
-				msg.setContent("Hola quiero una respuesta tuya");
+				msg.setContent(dayHour);
 				myAgent.send(msg);
 			}
 
 		}
-		
+
 	}
-	
+
+	private class ReceiveDecisionsGoing extends CyclicBehaviour {
+
+		MessageTemplate mt = MessageTemplate.or(MessageTemplate.and(MessageTemplate.MatchConversationId("propose-car"),
+				MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL)), MessageTemplate.and(MessageTemplate.MatchConversationId("propose-car"),
+						MessageTemplate.MatchPerformative(ACLMessage.REFUSE)));
+
+		HashMap<String, ArrayList<AID>> vehicles = new HashMap<String, ArrayList<AID>>();
+
+		@Override
+		public void action() {
+
+			ACLMessage msg = myAgent.receive(mt);
+			if(msg != null) {
+				System.out.print("Soy el agente " + name + " ");
+				String dayHour = msg.getContent();
+				expectedRepliesGoing.put(dayHour, expectedRepliesGoing.get(dayHour) - 1);
+
+				if(msg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
+					if(vehicles.get(dayHour) != null) {
+						ArrayList<AID> agents = vehicles.get(dayHour);
+						agents.add(msg.getSender());
+						vehicles.put(dayHour, agents);
+					}else {
+						ArrayList<AID> agents = new ArrayList<AID>();
+						agents.add(msg.getSender());
+						vehicles.put(dayHour, agents);						
+					}
+				}
+
+				if(expectedRepliesGoing.get(dayHour) == 0) {
+					System.out.println("El " + name + " va a rutear para el dia y hora " + dayHour);
+					ArrayList<Integer> vehicle = doRouting(dayHour);
+					for(Integer actual: vehicle) {
+						System.out.print(actual + " - ");
+					}
+					System.out.println();
+					System.out.println();
+				}
+
+
+			} else {
+				block();
+			}
+		}
+
+		public ArrayList<Integer> doRouting(String dayHour) {
+
+			ArrayList<Integer> lst = new ArrayList<Integer>();
+			ArrayList<AID> agents = vehicles.get(dayHour);
+			lst.add(Integer.parseInt(name.split(" ")[1]));
+
+			if(agents != null) {
+				while(agents.size() > 0 && lst.size() < 4) {
+					AID closest = vmc(agents);
+					lst.add(Integer.parseInt(closest.getName().split("@")[0].split(" ")[1]));
+					agents.remove(closest);
+				}
+			} else {
+				System.out.println("El " + name + " se va a ir solo");
+			}
+
+			return lst;
+
+		}
+
+		public AID vmc (ArrayList<AID> agents) {
+
+			double menor = 1000000;
+			AID bestAgent = null;
+
+			for(AID actual: agents) {
+				int idAgent = Integer.parseInt(actual.getName().split("@")[0].split(" ")[1]);
+				if(distances.get(idAgent) < menor) {
+					bestAgent = actual;
+					menor = distances.get(idAgent);
+				}
+			}
+
+			return bestAgent;
+
+		}
+	}
+
+
 	private class ReceiveExpectedProposesGoing extends CyclicBehaviour {
-		
+
 		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("inform-size-leaders-going"),
 				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
 
 		@Override
 		public void action() {
-			
+
 			ACLMessage msg = myAgent.receive(mt);
 			if(msg != null) {
 				try {
@@ -396,34 +473,94 @@ public class CustomerServiceAgent extends Agent{
 				} catch (UnreadableException e) {
 					e.printStackTrace();
 				}
-				
-				
-				
+
+
+
 			}else {
 				block();
 			}
 		}
-		
+
 	}
-	
+
 	private class ReceiveMessageFromLeaders extends CyclicBehaviour {
-		
+
 		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("propose-car"),
 				MessageTemplate.MatchPerformative(ACLMessage.PROPOSE));
 
+		HashMap<String, ArrayList<AID>> leaders = new HashMap<String, ArrayList<AID>>();
+		HashMap<String, AID> bestLeader = new HashMap<String, AID>();
+
 		@Override
 		public void action() {
-			
+
 			ACLMessage msg = myAgent.receive(mt);
 			if(msg != null) {
-				int idAgent = Integer.parseInt(msg.getSender().getName().split("@")[0].split(" ")[1]);
-				System.out.print("El lider " + msg.getSender().getName() + " me ha enviado un mensaje de propuesta. Yo soy el agente: " + name);
-				System.out.print(" Nuestra distancia es: " + distances.get(idAgent));
-				System.out.println();
+				String dayHour = msg.getContent();
+				expectedProposesGoing.put(dayHour, expectedProposesGoing.get(dayHour) - 1);
+
+				if(leaders.get(dayHour) != null) {
+					ArrayList<AID> agents = leaders.get(dayHour);
+					agents.add(msg.getSender());
+					leaders.put(dayHour, agents);
+				} else {
+					ArrayList<AID> agents = new ArrayList<AID>();
+					agents.add(msg.getSender());
+					leaders.put(dayHour, agents);
+				}
+
+				if(bestLeader.get(dayHour) == null) {
+					bestLeader.put(dayHour, msg.getSender());
+				} else {
+					if(compareDistancesLeaders(dayHour, msg.getSender())) {
+						bestLeader.put(dayHour, msg.getSender());
+					}
+				}
+
+				if(expectedProposesGoing.get(dayHour) == 0) {
+					sendDecision(dayHour);
+				}
+
 			}else {
 				block();
 			}
 		}
-		
+
+		public void sendDecision(String dayHour) {
+
+			ArrayList<AID> lideres = leaders.get(dayHour);
+			AID best = bestLeader.get(dayHour);
+
+			for(AID agent: lideres) {
+				ACLMessage msg;
+				if(agent.equals(best)) {
+					msg = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+				} else {
+					msg = new ACLMessage(ACLMessage.REFUSE);
+				}
+				msg.setConversationId("propose-car");
+				msg.addReceiver(agent);
+				msg.setContent(dayHour);
+				myAgent.send(msg);
+			}
+
+		}
+
+		public boolean compareDistancesLeaders(String dayHour, AID newLeader) {
+
+			int idAgentNew = Integer.parseInt(newLeader.getName().split("@")[0].split(" ")[1]);
+			int idBestAgent = Integer.parseInt(bestLeader.get(dayHour).getName().split("@")[0].split(" ")[1]);
+
+			double distNew = distances.get(idAgentNew);
+			double distBest = distances.get(idBestAgent);
+
+			if(distNew < distBest) {
+				return true;
+			} else {
+				return false;
+			}
+
+		}
+
 	}
 }

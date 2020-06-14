@@ -250,14 +250,8 @@ public class TransportSupervisor extends Agent {
 				break;
 			case 1:
 				//Send to leaders and no leaders the quality of message that the must recive
-				for(Map.Entry<String, ArrayList<Integer>> actual: ida.entrySet()) {
-					System.out.print(actual.getKey() + " ");
-					for(Integer agent: actual.getValue()) {
-						System.out.print(agent + " ");
-					}
-					System.out.println();
-				}
 				sendMessageLeadersGoing();
+				sendMessageNonLeadersGoing();
 				block();
 				//sendMessageNoLeaders();
 				break;
