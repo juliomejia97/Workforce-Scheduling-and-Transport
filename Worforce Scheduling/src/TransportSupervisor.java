@@ -239,6 +239,10 @@ public class TransportSupervisor extends Agent {
 		private int step = 0;
 		private HashMap<String, ArrayList<Integer>> leadersGoing;
 		private HashMap<String, ArrayList<Integer>> leadersReturn;
+		private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesGoing = new HashMap<String, ArrayList<ArrayList<Integer>>>();
+		private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesReturn = new HashMap<String, ArrayList<ArrayList<Integer>>>();
+		
+		
 		@Override
 		public void action() {
 			switch (step) {
@@ -246,17 +250,57 @@ public class TransportSupervisor extends Agent {
 				//Generate leaders
 				leadersGoing = GenerateLeadersGoing();
 				leadersReturn = GenerateLeadersReturn();
-				step=1;
+				step = 1;
 				break;
 			case 1:
 				//Send to leaders and no leaders the quality of message that the must recive
-				sendMessageLeadersGoing();
 				sendMessageNonLeadersGoing();
-				block();
-				//sendMessageNoLeaders();
+				sendMessageLeadersGoing();
+				step = 2;
 				break;
 			case 2:
 				//Recive the message of leaders
+				MessageTemplate mt = MessageTemplate.or(MessageTemplate.and(MessageTemplate.MatchConversationId("route-as-leaderGoing"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM)), MessageTemplate.and(MessageTemplate.MatchConversationId("route-as-leaderReturn"),
+						MessageTemplate.MatchPerformative(ACLMessage.INFORM)));
+				
+				ACLMessage msg = myAgent.receive(mt);
+				
+				if(msg != null) {
+					
+					try {
+						Object[] params = (Object[]) msg.getContentObject();
+						String dayHour = params[0].toString();
+						ArrayList<Integer> vehicle = (ArrayList<Integer>) params[1];
+						if(msg.getConversationId().equalsIgnoreCase("route-as-leaderGoing")) {
+							if(vehiclesGoing.get(dayHour) == null) {
+								ArrayList<ArrayList<Integer>> vehicles = new ArrayList<ArrayList<Integer>>();
+								vehicles.add(vehicle);
+								vehiclesGoing.put(dayHour, vehicles);
+								System.out.println("Se asigno primer vehiculo para el día y hora " + dayHour);
+							}else {
+								ArrayList<ArrayList<Integer>> vehicles = vehiclesGoing.get(dayHour);
+								vehicles.add(vehicle);
+								vehiclesGoing.put(dayHour, vehicles);
+								System.out.println("Se asigno vehiculo para el día y hora " + dayHour);
+							}
+						} else {
+							if(vehiclesReturn.get(dayHour) == null) {
+								ArrayList<ArrayList<Integer>> vehicles = new ArrayList<ArrayList<Integer>>();
+								vehicles.add(vehicle);
+								vehiclesReturn.put(dayHour, vehicles);
+							}else {
+								ArrayList<ArrayList<Integer>> vehicles = vehiclesReturn.get(dayHour);
+								vehicles.add(vehicle);
+								vehiclesReturn.put(dayHour, vehicles);
+							}			
+						}
+					} catch (UnreadableException e) {
+						e.printStackTrace();
+					}
+				}
+				
+				block();
 				//Going and return leaders
 				break;
 			case 3:

@@ -35,10 +35,12 @@ public class CustomerServiceAgent extends Agent{
 	private ArrayList<Double> distances = new ArrayList<Double>();
 	private String activities;
 	private ArrayList<String> opcions;
+	private AID transportSupervisor;
 
 	@Override
 	protected void setup() {
 		activities = "";
+		transportSupervisor = null;
 		opcions = new ArrayList<String>();
 		Object[] params = getArguments();
 		String param = params[0].toString();
@@ -295,6 +297,7 @@ public class CustomerServiceAgent extends Agent{
 			return select;
 		}
 	} 
+	
 	private class asLeaderGoing extends CyclicBehaviour {
 
 		HashMap<String, ArrayList<AID>> posibilities = new HashMap<String, ArrayList<AID>>();
@@ -308,10 +311,13 @@ public class CustomerServiceAgent extends Agent{
 			Object[] content;
 			String dayHour;
 			ArrayList<Integer> options;
-			Integer myId = Integer.parseInt(name.split(" ")[1]);
-			if(msg!=null) {
+			
+			if(msg != null) {
 
 				try {
+					if(transportSupervisor == null) {
+						transportSupervisor = msg.getSender();
+					}
 					content = (Object[]) msg.getContentObject();
 					dayHour = (String) content[0];
 					options = (ArrayList<Integer>) content[1];
@@ -384,7 +390,6 @@ public class CustomerServiceAgent extends Agent{
 
 			ACLMessage msg = myAgent.receive(mt);
 			if(msg != null) {
-				System.out.print("Soy el agente " + name + " ");
 				String dayHour = msg.getContent();
 				expectedRepliesGoing.put(dayHour, expectedRepliesGoing.get(dayHour) - 1);
 
@@ -403,11 +408,21 @@ public class CustomerServiceAgent extends Agent{
 				if(expectedRepliesGoing.get(dayHour) == 0) {
 					System.out.println("El " + name + " va a rutear para el dia y hora " + dayHour);
 					ArrayList<Integer> vehicle = doRouting(dayHour);
-					for(Integer actual: vehicle) {
-						System.out.print(actual + " - ");
+					try {
+						ACLMessage report = new ACLMessage(ACLMessage.INFORM);
+						report.setConversationId("route-as-leaderGoing");
+						Object[] params = {dayHour, vehicle};
+						report.setContentObject(params);
+						report.addReceiver(transportSupervisor);
+						myAgent.send(report);
+					} catch (IOException e) {
+						e.printStackTrace();
 					}
-					System.out.println();
-					System.out.println();
+//					for(Integer actual: vehicle) {
+//						System.out.print(actual + " - ");
+//					}
+//					System.out.println();
+//					System.out.println();
 				}
 
 
@@ -473,9 +488,6 @@ public class CustomerServiceAgent extends Agent{
 				} catch (UnreadableException e) {
 					e.printStackTrace();
 				}
-
-
-
 			}else {
 				block();
 			}
