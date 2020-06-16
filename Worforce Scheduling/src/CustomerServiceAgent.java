@@ -32,6 +32,8 @@ public class CustomerServiceAgent extends Agent{
 	private HashMap<String, Boolean> days = new HashMap<String, Boolean>();
 	private HashMap<String, Integer> expectedProposesGoing = new HashMap<String, Integer>();
 	private HashMap<String, Integer> expectedRepliesGoing = new HashMap<String, Integer>();
+	private HashMap<String, Integer> expectedProposesReturn = new HashMap<String, Integer>();
+	private HashMap<String, Integer> expectedRepliesReturn = new HashMap<String, Integer>();
 	private ArrayList<Double> distances = new ArrayList<Double>();
 	private String activities;
 	private ArrayList<String> opcions;
@@ -112,9 +114,14 @@ public class CustomerServiceAgent extends Agent{
 		GeneratePossiblesActivities();
 		addBehaviour(new TimeSlotConfiguration());
 		addBehaviour(new asLeaderGoing());
+		addBehaviour(new asLeaderReturn());
 		addBehaviour(new ReceiveMessageFromLeaders());
+		addBehaviour(new ReceiveMessageFromLeadersReturn());
 		addBehaviour(new ReceiveExpectedProposesGoing());
+		addBehaviour(new ReceiveExpectedProposesReturn());
 		addBehaviour(new ReceiveDecisionsGoing());
+		addBehaviour(new ReceiveDecisionsReturn());
+
 	}
 
 	public double getCoorX() {
@@ -300,6 +307,7 @@ public class CustomerServiceAgent extends Agent{
 	
 	private class asLeaderGoing extends CyclicBehaviour {
 
+		private static final long serialVersionUID = 1L;
 		HashMap<String, ArrayList<AID>> posibilities = new HashMap<String, ArrayList<AID>>();
 		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("route-as-leaderGoing"),
 				MessageTemplate.MatchPerformative(ACLMessage.QUERY_REF));
@@ -376,8 +384,90 @@ public class CustomerServiceAgent extends Agent{
 		}
 
 	}
+	
+	private class asLeaderReturn extends CyclicBehaviour {
+
+		private static final long serialVersionUID = 1L;
+		HashMap<String, ArrayList<AID>> posibilities = new HashMap<String, ArrayList<AID>>();
+		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("route-as-leaderReturn"),
+				MessageTemplate.MatchPerformative(ACLMessage.QUERY_REF));
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public void action() {
+			ACLMessage msg = myAgent.receive(mt);
+			Object[] content;
+			String dayHour;
+			ArrayList<Integer> options;
+			
+			if(msg != null) {
+
+				try {
+					if(transportSupervisor == null) {
+						transportSupervisor = msg.getSender();
+					}
+					content = (Object[]) msg.getContentObject();
+					dayHour = (String) content[0];
+					options = (ArrayList<Integer>) content[1];
+					expectedRepliesReturn.put(dayHour, options.size());
+					searchAgents(dayHour, options);
+					sendProposals(dayHour);
+
+				} catch (UnreadableException e) {
+					e.printStackTrace();
+				}
+
+			}else {
+				block();
+			}
+		}
+
+		public void searchAgents(String dayHour, ArrayList<Integer> agents) {
+
+			DFAgentDescription template = new DFAgentDescription();
+			ServiceDescription serviceD = new ServiceDescription();
+			serviceD.setType("situation");
+			template.addServices(serviceD);
+			try {
+				DFAgentDescription[] result = DFService.search(myAgent, template);
+				for(int i=0; i < result.length; i++) {
+					Integer id = Integer.parseInt(result[i].getName().getName().split("@")[0].split(" ")[1]);
+					if(agents.contains(id)) {
+						if(posibilities.get(dayHour) != null) {
+							ArrayList<AID> aux = this.posibilities.get(dayHour);
+							aux.add(result[i].getName());
+							this.posibilities.put(dayHour, aux);
+						}else {
+							ArrayList<AID> aux = new ArrayList<AID>();
+							aux.add(result[i].getName());
+							this.posibilities.put(dayHour, aux);
+						}
+					}
+
+				}
+			} catch (FIPAException e) {
+				e.printStackTrace();
+			}
+		}
+
+		public void sendProposals(String dayHour) {
+
+			ArrayList<AID> agents = this.posibilities.get(dayHour);
+			for(AID actual: agents) {
+				ACLMessage msg = new ACLMessage(ACLMessage.PROPOSE);
+				msg.setConversationId("propose-car-return");
+				msg.addReceiver(actual);
+				msg.setContent(dayHour);
+				myAgent.send(msg);
+			}
+
+		}
+
+	}
 
 	private class ReceiveDecisionsGoing extends CyclicBehaviour {
+
+		private static final long serialVersionUID = 1L;
 
 		MessageTemplate mt = MessageTemplate.or(MessageTemplate.and(MessageTemplate.MatchConversationId("propose-car"),
 				MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL)), MessageTemplate.and(MessageTemplate.MatchConversationId("propose-car"),
@@ -406,7 +496,7 @@ public class CustomerServiceAgent extends Agent{
 				}
 
 				if(expectedRepliesGoing.get(dayHour) == 0) {
-					System.out.println("El " + name + " va a rutear para el dia y hora " + dayHour);
+					//System.out.println("El " + name + " va a rutear para el dia y hora " + dayHour);
 					ArrayList<Integer> vehicle = doRouting(dayHour);
 					try {
 						ACLMessage report = new ACLMessage(ACLMessage.INFORM);
@@ -444,8 +534,92 @@ public class CustomerServiceAgent extends Agent{
 					agents.remove(closest);
 				}
 			} else {
-				System.out.println("El " + name + " se va a ir solo");
+				//System.out.println("El " + name + " se va a ir solo");
 			}
+
+			return lst;
+
+		}
+
+		public AID vmc (ArrayList<AID> agents) {
+
+			double menor = 1000000;
+			AID bestAgent = null;
+
+			for(AID actual: agents) {
+				int idAgent = Integer.parseInt(actual.getName().split("@")[0].split(" ")[1]);
+				if(distances.get(idAgent) < menor) {
+					bestAgent = actual;
+					menor = distances.get(idAgent);
+				}
+			}
+
+			return bestAgent;
+
+		}
+	}
+	
+	private class ReceiveDecisionsReturn extends CyclicBehaviour {
+
+		private static final long serialVersionUID = 1L;
+
+		MessageTemplate mt = MessageTemplate.or(MessageTemplate.and(MessageTemplate.MatchConversationId("propose-car-return"),
+				MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL)), MessageTemplate.and(MessageTemplate.MatchConversationId("propose-car-return"),
+						MessageTemplate.MatchPerformative(ACLMessage.REFUSE)));
+
+		HashMap<String, ArrayList<AID>> vehicles = new HashMap<String, ArrayList<AID>>();
+
+		@Override
+		public void action() {
+
+			ACLMessage msg = myAgent.receive(mt);
+			if(msg != null) {
+				String dayHour = msg.getContent();
+				expectedRepliesReturn.put(dayHour, expectedRepliesReturn.get(dayHour) - 1);
+
+				if(msg.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
+					if(vehicles.get(dayHour) != null) {
+						ArrayList<AID> agents = vehicles.get(dayHour);
+						agents.add(msg.getSender());
+						vehicles.put(dayHour, agents);
+					}else {
+						ArrayList<AID> agents = new ArrayList<AID>();
+						agents.add(msg.getSender());
+						vehicles.put(dayHour, agents);						
+					}
+				}
+
+				if(expectedRepliesReturn.get(dayHour) == 0) {
+					ArrayList<Integer> vehicle = doRouting(dayHour);
+					try {
+						ACLMessage report = new ACLMessage(ACLMessage.INFORM);
+						report.setConversationId("route-as-leaderReturn");
+						Object[] params = {dayHour, vehicle};
+						report.setContentObject(params);
+						report.addReceiver(transportSupervisor);
+						myAgent.send(report);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			} else {
+				block();
+			}
+		}
+
+		public ArrayList<Integer> doRouting(String dayHour) {
+
+			ArrayList<Integer> lst = new ArrayList<Integer>();
+			ArrayList<AID> agents = vehicles.get(dayHour);
+			lst.add(Integer.parseInt(name.split(" ")[1]));
+
+			if(agents != null) {
+				while(agents.size() > 0 && lst.size() < 4) {
+					AID closest = vmc(agents);
+					lst.add(Integer.parseInt(closest.getName().split("@")[0].split(" ")[1]));
+					agents.remove(closest);
+				}
+			} 
 
 			return lst;
 
@@ -472,6 +646,7 @@ public class CustomerServiceAgent extends Agent{
 
 	private class ReceiveExpectedProposesGoing extends CyclicBehaviour {
 
+		private static final long serialVersionUID = 1L;
 		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("inform-size-leaders-going"),
 				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
 
@@ -494,8 +669,35 @@ public class CustomerServiceAgent extends Agent{
 		}
 
 	}
+	
+	private class ReceiveExpectedProposesReturn extends CyclicBehaviour {
+
+		private static final long serialVersionUID = 1L;
+		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("inform-size-leaders-return"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+
+		@Override
+		public void action() {
+
+			ACLMessage msg = myAgent.receive(mt);
+			if(msg != null) {
+				try {
+					Object[] param = (Object[]) msg.getContentObject();
+					String dayHour = param[0].toString();
+					int cantReplies = Integer.parseInt(param[1].toString());
+					expectedProposesReturn.put(dayHour, cantReplies);
+				} catch (UnreadableException e) {
+					e.printStackTrace();
+				}
+			}else {
+				block();
+			}
+		}
+	}
 
 	private class ReceiveMessageFromLeaders extends CyclicBehaviour {
+
+		private static final long serialVersionUID = 1L;
 
 		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("propose-car"),
 				MessageTemplate.MatchPerformative(ACLMessage.PROPOSE));
@@ -573,6 +775,87 @@ public class CustomerServiceAgent extends Agent{
 			}
 
 		}
+	}
+	
+	private class ReceiveMessageFromLeadersReturn extends CyclicBehaviour {
 
+		private static final long serialVersionUID = 1L;
+
+		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("propose-car-return"),
+				MessageTemplate.MatchPerformative(ACLMessage.PROPOSE));
+
+		HashMap<String, ArrayList<AID>> leaders = new HashMap<String, ArrayList<AID>>();
+		HashMap<String, AID> bestLeader = new HashMap<String, AID>();
+
+		@Override
+		public void action() {
+
+			ACLMessage msg = myAgent.receive(mt);
+			if(msg != null) {
+				String dayHour = msg.getContent();
+				expectedProposesReturn.put(dayHour, expectedProposesReturn.get(dayHour) - 1);
+
+				if(leaders.get(dayHour) != null) {
+					ArrayList<AID> agents = leaders.get(dayHour);
+					agents.add(msg.getSender());
+					leaders.put(dayHour, agents);
+				} else {
+					ArrayList<AID> agents = new ArrayList<AID>();
+					agents.add(msg.getSender());
+					leaders.put(dayHour, agents);
+				}
+
+				if(bestLeader.get(dayHour) == null) {
+					bestLeader.put(dayHour, msg.getSender());
+				} else {
+					if(compareDistancesLeaders(dayHour, msg.getSender())) {
+						bestLeader.put(dayHour, msg.getSender());
+					}
+				}
+
+				if(expectedProposesReturn.get(dayHour) == 0) {
+					sendDecision(dayHour);
+				}
+
+			}else {
+				block();
+			}
+		}
+
+		public void sendDecision(String dayHour) {
+
+			ArrayList<AID> lideres = leaders.get(dayHour);
+			AID best = bestLeader.get(dayHour);
+
+			for(AID agent: lideres) {
+				ACLMessage msg;
+				if(agent.equals(best)) {
+					msg = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+				} else {
+					msg = new ACLMessage(ACLMessage.REFUSE);
+				}
+				msg.setConversationId("propose-car-return");
+				msg.addReceiver(agent);
+				msg.setContent(dayHour);
+				myAgent.send(msg);
+			}
+
+		}
+
+		public boolean compareDistancesLeaders(String dayHour, AID newLeader) {
+
+			int idAgentNew = Integer.parseInt(newLeader.getName().split("@")[0].split(" ")[1]);
+			int idBestAgent = Integer.parseInt(bestLeader.get(dayHour).getName().split("@")[0].split(" ")[1]);
+
+			double distNew = distances.get(idAgentNew);
+			double distBest = distances.get(idBestAgent);
+
+			if(distNew < distBest) {
+				return true;
+			} else {
+				return false;
+			}
+
+		}
 	}
 }

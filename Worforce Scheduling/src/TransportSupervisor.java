@@ -3,12 +3,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
@@ -147,7 +145,6 @@ public class TransportSupervisor extends Agent {
 						agents[i] = result[i].getName();
 					}
 				} catch (FIPAException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				addBehaviour(new routing());
@@ -236,6 +233,7 @@ public class TransportSupervisor extends Agent {
 
 	private class routing extends Behaviour{
 		
+		private static final long serialVersionUID = 1L;
 		private int step = 0;
 		private HashMap<String, ArrayList<Integer>> leadersGoing;
 		private HashMap<String, ArrayList<Integer>> leadersReturn;
@@ -256,6 +254,8 @@ public class TransportSupervisor extends Agent {
 				//Send to leaders and no leaders the quality of message that the must recive
 				sendMessageNonLeadersGoing();
 				sendMessageLeadersGoing();
+				sendMessageNonLeadersReturn();
+				sendMessageLeadersReturn();
 				step = 2;
 				break;
 			case 2:
@@ -271,28 +271,32 @@ public class TransportSupervisor extends Agent {
 					try {
 						Object[] params = (Object[]) msg.getContentObject();
 						String dayHour = params[0].toString();
+						@SuppressWarnings("unchecked")
 						ArrayList<Integer> vehicle = (ArrayList<Integer>) params[1];
 						if(msg.getConversationId().equalsIgnoreCase("route-as-leaderGoing")) {
 							if(vehiclesGoing.get(dayHour) == null) {
 								ArrayList<ArrayList<Integer>> vehicles = new ArrayList<ArrayList<Integer>>();
 								vehicles.add(vehicle);
 								vehiclesGoing.put(dayHour, vehicles);
-								System.out.println("Se asigno primer vehiculo para el día y hora " + dayHour);
+								//System.out.println("Se asigno primer vehiculo ida para el día y hora " + dayHour);
 							}else {
 								ArrayList<ArrayList<Integer>> vehicles = vehiclesGoing.get(dayHour);
 								vehicles.add(vehicle);
 								vehiclesGoing.put(dayHour, vehicles);
-								System.out.println("Se asigno vehiculo para el día y hora " + dayHour);
+								//System.out.println("Se asigno vehiculo ida para el día y hora " + dayHour);
 							}
 						} else {
 							if(vehiclesReturn.get(dayHour) == null) {
 								ArrayList<ArrayList<Integer>> vehicles = new ArrayList<ArrayList<Integer>>();
 								vehicles.add(vehicle);
 								vehiclesReturn.put(dayHour, vehicles);
+								//System.out.println("Se asigno primer vehiculo vuelta para el día y hora " + dayHour);
+
 							}else {
 								ArrayList<ArrayList<Integer>> vehicles = vehiclesReturn.get(dayHour);
 								vehicles.add(vehicle);
 								vehiclesReturn.put(dayHour, vehicles);
+								//System.out.println("Se asigno vehiculo vuelta para el día y hora " + dayHour);
 							}			
 						}
 					} catch (UnreadableException e) {
@@ -300,11 +304,12 @@ public class TransportSupervisor extends Agent {
 					}
 				}
 				
-				block();
-				//Going and return leaders
+				step = 3;
+				
 				break;
 			case 3:
-				//Fix if there is an agent without car
+				
+				
 				break;
 			case 4:
 				//Send solution to airline
@@ -374,7 +379,7 @@ public class TransportSupervisor extends Agent {
 				leader = -1;
 				farLeader = 100000;
 				for(int actual:agents) {
-					if(distances[0][actual]<farLeader && !lst.contains(actual)) {
+					if(distances[0][actual] < farLeader && !lst.contains(actual)) {
 						leader = actual;
 						farLeader = distances[0][actual];
 					}
@@ -438,7 +443,6 @@ public class TransportSupervisor extends Agent {
 					}
 				}
 			}
-			
 		}
 		
 		private void sendMessageNonLeadersGoing() {
@@ -451,6 +455,51 @@ public class TransportSupervisor extends Agent {
 					if(recep!=null) {
 						msg.addReceiver(recep);
 						Object[] args = {actual.getKey(), leadersGoing.get(actual.getKey()).size()};
+						try {
+							msg.setContentObject(args);
+							myAgent.send(msg);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}	
+				}
+			}
+			
+		}
+		
+		private void sendMessageLeadersReturn() {
+
+			for(Map.Entry<String, ArrayList<Integer>> actual: leadersReturn.entrySet()) {
+				if(vuelta.get(actual.getKey()).size() > 0) {
+					for(Integer agent:actual.getValue()) {
+						AID recep= getAgent(agent);
+						ACLMessage msg = new ACLMessage(ACLMessage.QUERY_REF);
+						msg.setConversationId("route-as-leaderReturn");
+						if(recep!=null) {
+							msg.addReceiver(recep);
+							Object[] args = {actual.getKey(), vuelta.get(actual.getKey())};
+							try {
+								msg.setContentObject(args);
+								myAgent.send(msg);
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}	
+					}
+				}
+			}
+		}
+		
+		private void sendMessageNonLeadersReturn() {
+			
+			for(Map.Entry<String, ArrayList<Integer>> actual: vuelta.entrySet()) {
+				for(Integer agent: actual.getValue()) {
+					AID recep= getAgent(agent);
+					ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+					msg.setConversationId("inform-size-leaders-return");
+					if(recep!=null) {
+						msg.addReceiver(recep);
+						Object[] args = {actual.getKey(), leadersReturn.get(actual.getKey()).size()};
 						try {
 							msg.setContentObject(args);
 							myAgent.send(msg);
