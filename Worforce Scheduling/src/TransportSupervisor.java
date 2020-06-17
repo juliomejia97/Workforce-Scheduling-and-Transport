@@ -74,7 +74,6 @@ public class TransportSupervisor extends Agent {
 		} catch (IOException e) {
 			System.out.println("IOException: " + e.getMessage());
 		}
-		myGui = new TransportSupervisorGUI(this);
 		//Offer service of agent
 		DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
@@ -387,9 +386,12 @@ public class TransportSupervisor extends Agent {
 			
 			efficiency = N / NRoutes;
 			System.out.println("Efficiency: " + efficiency);
-			System.out.println("Additional Km: " + additionalKm / indirectRoutes);
+			System.out.println("Additional Km: " + additionalKm);
+			System.out.println("Prom Additional Km: " + additionalKm / indirectRoutes);
 			System.out.println("Ideal Km: " + idealKm / N);
 			System.out.println("Indirect Routes: " + indirectRoutes);
+			
+			new TransportSupervisorGUI(vehiclesGoing, vehiclesReturn);
 			
 			return FO;
 			
@@ -428,15 +430,9 @@ public class TransportSupervisor extends Agent {
 			}
 			
 			km += distances[0][vehicle.get(0)];
-
-			
-			for(int i = 1; i < vehicle.size() - 1; i++) {
-				if(vehicle.get(i) == idAgent) {
-					start = true;
-				}
-				if(start) {
-					km += distances[vehicle.get(i)][vehicle.get(i + 1)];
-				}
+						
+			for(int i = 0; i < vehicle.indexOf(idAgent); i++) {
+				km += distances[vehicle.get(i)][vehicle.get(i + 1)];
 			}
 									
 			return km;

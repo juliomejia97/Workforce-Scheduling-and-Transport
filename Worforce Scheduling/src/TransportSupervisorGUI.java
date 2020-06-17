@@ -1,8 +1,11 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 
 import javax.swing.JFrame;
@@ -37,9 +40,8 @@ public class TransportSupervisorGUI extends JPanel {
 	private JTable tblVuelta;
 	private Agent myAgent;
 	
-	public TransportSupervisorGUI(Agent a) {
+	public TransportSupervisorGUI(HashMap<String, ArrayList<ArrayList<Integer>>> idas, HashMap<String, ArrayList<ArrayList<Integer>>> vueltas) {
 		
-		myAgent = a;
 		menu = new JFrame();
 		menu.getContentPane().setBackground(Color.WHITE);
 		menu.setSize(700, 650);
@@ -122,24 +124,81 @@ public class TransportSupervisorGUI extends JPanel {
 		lblIda.setBounds(18, 220, 300, 26);
 		add(lblIda);
 		
-				
-		//PRUEBA
-//		for(int i = 0; i < 75; i++) {
-//			
-//			viewIda = new Vector<String>();
-//			viewIda.add("Agent " + (i + 1));
-//			String[][] sch = schedule.get(i);
-//			String hour = sch[0][0].split(" ")[1];
-//			for(int j = 0; j < 8; j++) {
-//				if(sch[j][1].equalsIgnoreCase("LLLL")) {
-//					viewIda.add("Libre");
-//				}else {
-//					viewIda.add("" + hour + "-" + sch[j][1].toLowerCase());
-//				}
-//			}
-//
-//			agentDataIda.add(viewIda);
-//		}
+		int idIda = 0;
+		
+		for(Map.Entry<String, ArrayList<ArrayList<Integer>>> ida: idas.entrySet()) {
+			for(ArrayList<Integer> vehicles: ida.getValue()) {
+				viewIda = new Vector<String>();
+				viewIda.add("" + (++idIda));
+				viewIda.add(ida.getKey().split(" ")[0]);
+				viewIda.add(ida.getKey().split(" ")[1]);
+				switch(vehicles.size()) {
+				case 1:
+					viewIda.add("" + -vehicles.get(0));
+					viewIda.add("");
+					viewIda.add("");
+					viewIda.add("");
+					break;
+				case 2:
+					viewIda.add("" + -vehicles.get(0));
+					viewIda.add("" + -vehicles.get(1));
+					viewIda.add("");
+					viewIda.add("");
+					break;
+				case 3:
+					viewIda.add("" + -vehicles.get(0));
+					viewIda.add("" + -vehicles.get(1));
+					viewIda.add("" + -vehicles.get(2));
+					viewIda.add("");
+					break;
+				case 4:
+					viewIda.add("" + -vehicles.get(0));
+					viewIda.add("" + -vehicles.get(1));
+					viewIda.add("" + -vehicles.get(2));
+					viewIda.add("" + -vehicles.get(3));
+					break;
+				}
+				agentDataIda.add(viewIda);
+			}
+		}
+		
+		int idVuelta = 0;
+		
+		for(Map.Entry<String, ArrayList<ArrayList<Integer>>> vuel: vueltas.entrySet()) {
+			for(ArrayList<Integer> vehicles: vuel.getValue()) {
+				viewVuelta = new Vector<String>();
+				viewVuelta.add("" + (++idVuelta));
+				viewVuelta.add(vuel.getKey().split(" ")[0]);
+				viewVuelta.add(vuel.getKey().split(" ")[1]);
+				switch(vehicles.size()) {
+				case 1:
+					viewVuelta.add("" + vehicles.get(0));
+					viewVuelta.add("");
+					viewVuelta.add("");
+					viewVuelta.add("");
+					break;
+				case 2:
+					viewVuelta.add("" + vehicles.get(0));
+					viewVuelta.add("" + vehicles.get(1));
+					viewVuelta.add("");
+					viewVuelta.add("");
+					break;
+				case 3:
+					viewVuelta.add("" + vehicles.get(0));
+					viewVuelta.add("" + vehicles.get(1));
+					viewVuelta.add("" + vehicles.get(2));
+					viewVuelta.add("");
+					break;
+				case 4:
+					viewVuelta.add("" + vehicles.get(0));
+					viewVuelta.add("" + vehicles.get(1));
+					viewVuelta.add("" + vehicles.get(2));
+					viewVuelta.add("" + vehicles.get(3));
+					break;
+				}
+				agentDataVuelta.add(viewVuelta);
+			}
+		}
 		
 		barraArrastreIda = new JScrollPane();
 		barraArrastreIda.setBounds(18, 240, 650, 150);
