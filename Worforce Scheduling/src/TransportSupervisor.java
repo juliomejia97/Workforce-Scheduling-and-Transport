@@ -235,6 +235,8 @@ public class TransportSupervisor extends Agent {
 		
 		private static final long serialVersionUID = 1L;
 		private int step = 0;
+		private int cantLeaders = 0;
+		private int msgReceived = 0;
 		private HashMap<String, ArrayList<Integer>> leadersGoing;
 		private HashMap<String, ArrayList<Integer>> leadersReturn;
 		private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesGoing = new HashMap<String, ArrayList<ArrayList<Integer>>>();
@@ -267,7 +269,7 @@ public class TransportSupervisor extends Agent {
 				ACLMessage msg = myAgent.receive(mt);
 				
 				if(msg != null) {
-					
+					msgReceived++;
 					try {
 						Object[] params = (Object[]) msg.getContentObject();
 						String dayHour = params[0].toString();
@@ -302,17 +304,24 @@ public class TransportSupervisor extends Agent {
 					} catch (UnreadableException e) {
 						e.printStackTrace();
 					}
+					
+					if(cantLeaders == msgReceived) {
+						step = 3;
+					}
+					
+				} else {
+					block();
 				}
-				
-				step = 3;
-				
+								
 				break;
 			case 3:
 				
-				
+				step = 4;
 				break;
 			case 4:
-				//Send solution to airline
+				double FO = calculateRoutingFO();
+				//System.out.println("FO: " + FO);
+				block();
 				break;
 			default:
 				break;
@@ -322,7 +331,115 @@ public class TransportSupervisor extends Agent {
 
 		@Override
 		public boolean done() {
-			return (step==5);
+			return (step == 5);
+		}
+		
+		private double calculateRoutingFO() {
+			
+			double FO = 0;
+			double N = 0; //Employees that the airline transport
+			double NRoutes = 0; //How many vehicles i have
+			double efficiency = 0;
+			double totalKmAgent = 0;
+			double additionalKm = 0;
+			double idealKm = 0;
+			double indirectRoutes = 0;
+			
+			for(Map.Entry<String, ArrayList<ArrayList<Integer>>> allVehiclesGoing: vehiclesGoing.entrySet()) {
+				ArrayList<ArrayList<Integer>> vehicles = allVehiclesGoing.getValue();
+				System.out.println("Rutas IDA ");
+				System.out.println();
+				for(ArrayList<Integer> vehicleDay: vehicles) {
+					System.out.println("DIA Y HORA: " + allVehiclesGoing.getKey());
+					NRoutes++;
+					indirectRoutes += vehicleDay.size() - 1;
+					for(Integer person: vehicleDay) {
+						System.out.print(person + " ");
+						N++;
+						totalKmAgent = calculateKmAgentGoing(person, vehicleDay);
+						additionalKm += totalKmAgent - distances[person][0];
+						idealKm += distances[person][0];
+					}
+					System.out.println();
+					System.out.println();
+				}
+			}
+			
+			for(Map.Entry<String, ArrayList<ArrayList<Integer>>> allVehiclesReturn: vehiclesReturn.entrySet()) {
+				ArrayList<ArrayList<Integer>> vehicles = allVehiclesReturn.getValue();
+				System.out.println("Rutas VUELTA ");
+				System.out.println();
+				for(ArrayList<Integer> vehicleDay: vehicles) {
+					System.out.println("DIA Y HORA: " + allVehiclesReturn.getKey());
+					NRoutes++;
+					indirectRoutes += vehicleDay.size() - 1;
+					for(Integer person: vehicleDay) {
+						System.out.print(person + " ");
+						N++;
+						totalKmAgent = calculateKmAgentReturn(person, vehicleDay);
+						additionalKm += totalKmAgent - distances[0][person];
+						idealKm += distances[0][person];
+					}
+					System.out.println();
+					System.out.println();
+				}
+			}
+			
+			efficiency = N / NRoutes;
+			System.out.println("Efficiency: " + efficiency);
+			System.out.println("Additional Km: " + additionalKm / indirectRoutes);
+			System.out.println("Ideal Km: " + idealKm / N);
+			System.out.println("Indirect Routes: " + indirectRoutes);
+			
+			return FO;
+			
+		}
+		
+		private double calculateKmAgentGoing(int idAgent, ArrayList<Integer> vehicle) {
+			
+			double km = 0;
+			boolean start = false;
+			
+			if(vehicle.size() == 1) {
+				return distances[idAgent][0];
+			}
+			
+			for(int i = 0; i < vehicle.size() - 1; i++) {
+				if(vehicle.get(i) == idAgent) {
+					start = true;
+				}
+				if(start) {
+					km += distances[vehicle.get(i)][vehicle.get(i + 1)];
+				}
+			}
+			
+			km += distances[vehicle.get(vehicle.size() - 1)][0];
+						
+			return km;
+		}
+		
+		private double calculateKmAgentReturn(int idAgent, ArrayList<Integer> vehicle) {
+			
+			double km = 0;
+			boolean start = false;
+			
+			if(vehicle.size() == 1) {
+				return distances[0][idAgent];
+			}
+			
+			km += distances[0][vehicle.get(0)];
+
+			
+			for(int i = 1; i < vehicle.size() - 1; i++) {
+				if(vehicle.get(i) == idAgent) {
+					start = true;
+				}
+				if(start) {
+					km += distances[vehicle.get(i)][vehicle.get(i + 1)];
+				}
+			}
+									
+			return km;
 		}
 
 		private HashMap<String, ArrayList<Integer>> GenerateLeadersGoing(){
@@ -436,6 +553,7 @@ public class TransportSupervisor extends Agent {
 							try {
 								msg.setContentObject(args);
 								myAgent.send(msg);
+								cantLeaders++;
 							} catch (IOException e) {
 								e.printStackTrace();
 							}
@@ -481,6 +599,7 @@ public class TransportSupervisor extends Agent {
 							try {
 								msg.setContentObject(args);
 								myAgent.send(msg);
+								cantLeaders++;
 							} catch (IOException e) {
 								e.printStackTrace();
 							}
