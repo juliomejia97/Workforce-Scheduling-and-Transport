@@ -26,7 +26,7 @@ public class TransportSupervisor extends Agent {
 	private HashMap<String, ArrayList<Integer>> ida;
 	private HashMap<String, ArrayList<Integer>> vuelta;
 	private ArrayList<String[][]> timeSolt;
-	private TransportSupervisorGUI myGui;
+	private double schedulingFO;
 	private Double[][] distances;
 	private AID[] agents;
 
@@ -113,6 +113,14 @@ public class TransportSupervisor extends Agent {
 	public void setTimeSolt(ArrayList<String[][]> timeSolt) {
 		this.timeSolt = timeSolt;
 	}
+	
+	public double getSchedulingFO() {
+		return schedulingFO;
+	}
+
+	public void setSchedulingFO(double schedulingFO) {
+		this.schedulingFO = schedulingFO;
+	}
 
 	private class routingAgent extends CyclicBehaviour{
 
@@ -126,7 +134,9 @@ public class TransportSupervisor extends Agent {
 			ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
 				try {
-					setTimeSolt((ArrayList<String[][]>) msg.getContentObject());
+					Object[] params = (Object[]) msg.getContentObject();
+					setTimeSolt((ArrayList<String[][]>) params[1]);
+					setSchedulingFO((double) params[0]); 
 					extractPossibleRoutes();
 
 				} catch (UnreadableException e) {
@@ -319,7 +329,7 @@ public class TransportSupervisor extends Agent {
 				break;
 			case 4:
 				double FO = calculateRoutingFO();
-				//System.out.println("FO: " + FO);
+				System.out.println("FO: " + FO);
 				block();
 				break;
 			default:
@@ -339,6 +349,8 @@ public class TransportSupervisor extends Agent {
 			double N = 0; //Employees that the airline transport
 			double NRoutes = 0; //How many vehicles i have
 			double efficiency = 0;
+			double promAdditionalKm = 0;
+			double promIdealKm = 0;
 			double totalKmAgent = 0;
 			double additionalKm = 0;
 			double idealKm = 0;
@@ -385,13 +397,17 @@ public class TransportSupervisor extends Agent {
 			}
 			
 			efficiency = N / NRoutes;
+			promAdditionalKm = additionalKm / indirectRoutes;
+			promIdealKm = idealKm / N;
+			FO = promAdditionalKm / promIdealKm;
 			System.out.println("Efficiency: " + efficiency);
 			System.out.println("Additional Km: " + additionalKm);
-			System.out.println("Prom Additional Km: " + additionalKm / indirectRoutes);
-			System.out.println("Ideal Km: " + idealKm / N);
+			System.out.println("Prom Additional Km: " + promAdditionalKm);
+			System.out.println("Prom Ideal Km: " + promIdealKm);
 			System.out.println("Indirect Routes: " + indirectRoutes);
 			
-			new TransportSupervisorGUI(vehiclesGoing, vehiclesReturn);
+			new TransportSupervisorGUI(vehiclesGoing, vehiclesReturn, efficiency, promAdditionalKm, promIdealKm);
+			new AirlineGUI(myAgent, timeSolt, schedulingFO, FO, NRoutes);
 			
 			return FO;
 			
@@ -423,7 +439,6 @@ public class TransportSupervisor extends Agent {
 		private double calculateKmAgentReturn(int idAgent, ArrayList<Integer> vehicle) {
 			
 			double km = 0;
-			boolean start = false;
 			
 			if(vehicle.size() == 1) {
 				return distances[0][idAgent];

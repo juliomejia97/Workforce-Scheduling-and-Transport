@@ -1,6 +1,7 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -16,7 +17,6 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 
-import jade.core.Agent;
 
 public class TransportSupervisorGUI extends JPanel {
 
@@ -28,19 +28,20 @@ public class TransportSupervisorGUI extends JPanel {
 	private JLabel lblPenalization;
 	private JLabel lblAditionalKm;
 	private JLabel lblIdealDistance;
+	private JLabel lblEfficiency;
 	private JLabel lblIda;
 	private JLabel lblVuelta;
 	private JTextField txtFuncionObjetivo;
 	private JTextField txtPenalization;
 	private JTextField txtAditionalKm;
 	private JTextField txtIdealDistance;
+	private JTextField txtEfficiency;
 	private JScrollPane barraArrastreIda;
 	private JTable tblIda;
 	private JScrollPane barraArrastreVuelta;
 	private JTable tblVuelta;
-	private Agent myAgent;
 	
-	public TransportSupervisorGUI(HashMap<String, ArrayList<ArrayList<Integer>>> idas, HashMap<String, ArrayList<ArrayList<Integer>>> vueltas) {
+	public TransportSupervisorGUI(HashMap<String, ArrayList<ArrayList<Integer>>> idas, HashMap<String, ArrayList<ArrayList<Integer>>> vueltas, double efficiency, double promAdditional, double promIdeal) {
 		
 		menu = new JFrame();
 		menu.getContentPane().setBackground(Color.WHITE);
@@ -58,6 +59,7 @@ public class TransportSupervisorGUI extends JPanel {
 		Vector<String> viewVuelta = new Vector<String>();
 		Vector<List<String>> agentDataVuelta = new Vector<List<String>>();
 		
+		DecimalFormat df = new DecimalFormat("#.##");		
 		
 		setBackground(Color.BLACK);
 		setSize(700, 700);
@@ -77,6 +79,7 @@ public class TransportSupervisorGUI extends JPanel {
 		add(lblFOTotal);
 		
 		txtFuncionObjetivo = new JTextField();
+		txtFuncionObjetivo.setText("" + df.format(promAdditional / promIdeal));
 		txtFuncionObjetivo.setBounds(336, 76, 167, 26);
 		txtFuncionObjetivo.setColumns(10);
 		txtFuncionObjetivo.setEditable(false);
@@ -89,6 +92,7 @@ public class TransportSupervisorGUI extends JPanel {
 		add(lblPenalization);
 		
 		txtPenalization = new JTextField();
+		txtPenalization.setText("" + df.format((promAdditional / promIdeal) * 100));
 		txtPenalization.setBounds(336, 110, 167, 26);
 		txtPenalization.setColumns(10);
 		txtPenalization.setEditable(false);
@@ -101,6 +105,7 @@ public class TransportSupervisorGUI extends JPanel {
 		add(lblAditionalKm);
 		
 		txtAditionalKm = new JTextField();
+		txtAditionalKm.setText("" + df.format(promAdditional));
 		txtAditionalKm.setBounds(336, 144, 167, 26);
 		txtAditionalKm.setColumns(10);
 		txtAditionalKm.setEditable(false);
@@ -113,15 +118,29 @@ public class TransportSupervisorGUI extends JPanel {
 		add(lblIdealDistance);
 		
 		txtIdealDistance = new JTextField();
+		txtIdealDistance.setText("" + df.format(promIdeal));
 		txtIdealDistance.setBounds(336, 178, 167, 26);
 		txtIdealDistance.setColumns(10);
 		txtIdealDistance.setEditable(false);
 		add(txtIdealDistance);
 		
+		lblEfficiency = new JLabel("Efficiency ");
+		lblEfficiency.setFont(new Font("Tahoma", Font.PLAIN, 17));
+		lblEfficiency.setForeground(Color.WHITE);
+		lblEfficiency.setBounds(177, 212, 150, 26);
+		add(lblEfficiency);
+		
+		txtEfficiency = new JTextField();
+		txtEfficiency.setText("" + df.format(efficiency));
+		txtEfficiency.setBounds(336, 212, 167, 26);
+		txtEfficiency.setColumns(10);
+		txtEfficiency.setEditable(false);
+		add(txtEfficiency);
+		
 		lblIda = new JLabel("Transportation from households to airport ");
 		lblIda.setFont(new Font("Tahoma", Font.PLAIN, 13));
 		lblIda.setForeground(Color.WHITE);
-		lblIda.setBounds(18, 220, 300, 26);
+		lblIda.setBounds(18, 240, 300, 26);
 		add(lblIda);
 		
 		int idIda = 0;
@@ -201,7 +220,7 @@ public class TransportSupervisorGUI extends JPanel {
 		}
 		
 		barraArrastreIda = new JScrollPane();
-		barraArrastreIda.setBounds(18, 240, 650, 150);
+		barraArrastreIda.setBounds(18, 270, 650, 120);
 		add(barraArrastreIda);
 		tblIda = new JTable();
 		barraArrastreIda.setViewportView(tblIda);
@@ -214,7 +233,7 @@ public class TransportSupervisorGUI extends JPanel {
 		add(lblVuelta);
 		
 		barraArrastreVuelta = new JScrollPane();
-		barraArrastreVuelta.setBounds(18, 450, 650, 150);
+		barraArrastreVuelta.setBounds(18, 450, 650, 120);
 		add(barraArrastreVuelta);
 		tblVuelta = new JTable();
 		barraArrastreVuelta.setViewportView(tblVuelta);

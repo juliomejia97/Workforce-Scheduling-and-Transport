@@ -3,9 +3,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.ProfileImpl;
@@ -28,6 +26,7 @@ public class Airline extends Agent{
 	private AirlineGUI myInterface;
 	private AID transport;
 	private ArrayList<String[][]> timeslots;
+	private double schedulingFO;
 	@Override
 	protected void setup() {
 
@@ -87,10 +86,6 @@ public class Airline extends Agent{
 		this.myInterface = myInterface;
 	}
 	
-	public void updateGUI(ArrayList<String[][]>schedule, double FO) {
-		setMyInterface(new AirlineGUI(this, schedule, FO));
-	}
-	
 	private class bestSchedule extends CyclicBehaviour {
 		
 		private static final long serialVersionUID = 1L;
@@ -103,16 +98,13 @@ public class Airline extends Agent{
 			ACLMessage msg = myAgent.receive(mt);
 			Object[] args;
 			ArrayList<String[][]> schedule = null;
-			Double FO;
 			if(msg!=null) {
 				try {
 					args =  (Object[]) msg.getContentObject();
 					schedule = (ArrayList<String[][]>) args[0];
 					timeslots = schedule;
-					FO = (Double) args[1];
-					updateGUI(schedule, FO);
+					schedulingFO = (Double) args[1];
 				} catch (UnreadableException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				DFAgentDescription template = new DFAgentDescription();
@@ -123,7 +115,6 @@ public class Airline extends Agent{
 					DFAgentDescription[] result = DFService.search(myAgent, template);
 					transport = result[0].getName();
 				} catch (FIPAException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				addBehaviour(new requestRouting());
@@ -136,16 +127,18 @@ public class Airline extends Agent{
 	}
 	private class requestRouting extends OneShotBehaviour{
 
+		private static final long serialVersionUID = 1L;
+
 		@Override
 		public void action() {
 			ACLMessage cfp = new ACLMessage(ACLMessage.REQUEST);
 			cfp.addReceiver(transport);
 			cfp.setConversationId("routing");
 			try {
-				cfp.setContentObject(timeslots);
+				Object[] params = {schedulingFO, timeslots};
+				cfp.setContentObject(params);
 				myAgent.send(cfp);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			

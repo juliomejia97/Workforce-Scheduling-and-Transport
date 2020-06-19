@@ -5,6 +5,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,19 +32,23 @@ public class AirlineGUI extends JPanel implements WindowListener{
 	private JLabel lblFOTotal;
 	private JLabel lblFOFaltantes;
 	private JLabel lblFOBienestar;
+	private JLabel lblFOVariability;
+	private JLabel lblRoutes;
 	private JTextField txtFuncionObjetivo;
 	private JTextField txtFuncionObjetivoFaltantes;
 	private JTextField txtFuncionObjetivoBienestar;
+	private JTextField txtVariability;
+	private JTextField txtRoutes;
 	private JScrollPane barraArrastre;
 	private JTable tblAgentes;
 	private Agent myAgent;
 	
-	public AirlineGUI(Agent a, ArrayList<String[][]> schedule, double FO) {
+	public AirlineGUI(Agent a, ArrayList<String[][]> schedule, double FO, double wellnessFO, double numRoutes) {
 		
 		myAgent = a;
 		menu = new JFrame();
 		menu.getContentPane().setBackground(Color.WHITE);
-		menu.setSize(700, 600);
+		menu.setSize(700, 650);
 		menu.setTitle("Airline Scheduling System");
 		menu.getContentPane().setLayout(new BorderLayout());
 		menu.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -53,6 +58,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		Vector<String> view = new Vector<String>();
 		Vector<List<String>> agentData = new Vector<List<String>>();
 		
+		DecimalFormat df = new DecimalFormat("#.##");
 		
 		setBackground(Color.BLACK);
 		setSize(700, 600);
@@ -64,6 +70,8 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		lblTitulo.setBounds(200, 0, 300, 62);
 		add(lblTitulo);
 		
+		long totalFO =  (long) ((FO + wellnessFO) * 10000 + numRoutes);
+		
 		
 		lblFOTotal = new JLabel("Total OF ");
 		lblFOTotal.setFont(new Font("Tahoma", Font.PLAIN, 17));
@@ -71,7 +79,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		lblFOTotal.setBounds(177, 73, 100, 26);
 		add(lblFOTotal);
 		
-		txtFuncionObjetivo = new JTextField("" + FO);
+		txtFuncionObjetivo = new JTextField("" + df.format(totalFO));
 		txtFuncionObjetivo.setBounds(336, 76, 167, 26);
 		txtFuncionObjetivo.setColumns(10);
 		txtFuncionObjetivo.setEditable(false);
@@ -96,13 +104,38 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		add(lblFOBienestar);
 		
 		txtFuncionObjetivoBienestar = new JTextField();
+		txtFuncionObjetivoBienestar.setText("" + df.format(wellnessFO));
 		txtFuncionObjetivoBienestar.setBounds(336, 144, 167, 26);
 		txtFuncionObjetivoBienestar.setColumns(10);
 		txtFuncionObjetivoBienestar.setEditable(false);
 		add(txtFuncionObjetivoBienestar);
 		
-				
-		//PRUEBA
+		lblFOVariability = new JLabel("Variability FO ");
+		lblFOVariability.setFont(new Font("Tahoma", Font.PLAIN, 17));
+		lblFOVariability.setForeground(Color.WHITE);
+		lblFOVariability.setBounds(177, 178, 150, 26);
+		add(lblFOVariability);
+		
+		txtVariability = new JTextField();
+		txtVariability.setText("" + 0);
+		txtVariability.setBounds(336, 178, 167, 26);
+		txtVariability.setColumns(10);
+		txtVariability.setEditable(false);
+		add(txtVariability);
+		
+		lblRoutes = new JLabel("Number of Routes ");
+		lblRoutes .setFont(new Font("Tahoma", Font.PLAIN, 17));
+		lblRoutes .setForeground(Color.WHITE);
+		lblRoutes .setBounds(177, 212, 150, 26);
+		add(lblRoutes );
+		
+		txtRoutes = new JTextField();
+		txtRoutes.setText("" + numRoutes);
+		txtRoutes.setBounds(336, 212, 167, 26);
+		txtRoutes.setColumns(10);
+		txtRoutes.setEditable(false);
+		add(txtRoutes);
+			
 		for(int i = 0; i < 75; i++) {
 			
 			view = new Vector<String>();
@@ -121,7 +154,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		}
 		
 		barraArrastre = new JScrollPane();
-		barraArrastre.setBounds(18, 217, 650, 280);
+		barraArrastre.setBounds(18, 250, 650, 300);
 		add(barraArrastre);
 		tblAgentes = new JTable();
 		barraArrastre.setViewportView(tblAgentes);
