@@ -31,11 +31,15 @@ public class AirlineGUI extends JPanel implements WindowListener{
 	private JLabel lblTitulo;
 	private JLabel lblFOTotal;
 	private JLabel lblFOFaltantes;
+	private JLabel lblMaxDemand;
+	private JLabel lblUnatendedDemand;
 	private JLabel lblFOBienestar;
 	private JLabel lblFOVariability;
 	private JLabel lblRoutes;
 	private JTextField txtFuncionObjetivo;
 	private JTextField txtFuncionObjetivoFaltantes;
+	private JTextField txtMaxDemand;
+	private JTextField txtUnatendedDemand;
 	private JTextField txtFuncionObjetivoBienestar;
 	private JTextField txtVariability;
 	private JTextField txtRoutes;
@@ -43,7 +47,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 	private JTable tblAgentes;
 	private Agent myAgent;
 	
-	public AirlineGUI(Agent a, ArrayList<String[][]> schedule, double FO, double wellnessFO, double numRoutes) {
+	public AirlineGUI(Agent a, ArrayList<String[][]> schedule, double FO, double wellnessFO, double numRoutes, double maxDemand, double unatendedDemand) {
 		
 		myAgent = a;
 		menu = new JFrame();
@@ -85,7 +89,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		txtFuncionObjetivo.setEditable(false);
 		add(txtFuncionObjetivo);
 		
-		lblFOFaltantes = new JLabel("Unatended FO ");
+		lblFOFaltantes = new JLabel("Demand OF ");
 		lblFOFaltantes.setFont(new Font("Tahoma", Font.PLAIN, 17));
 		lblFOFaltantes.setForeground(Color.WHITE);
 		lblFOFaltantes.setBounds(177, 110, 150, 26);
@@ -97,28 +101,52 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		txtFuncionObjetivoFaltantes.setEditable(false);
 		add(txtFuncionObjetivoFaltantes);
 		
-		lblFOBienestar = new JLabel("Wellness FO ");
+		lblUnatendedDemand = new JLabel("Unatended Dem ");
+		lblUnatendedDemand.setFont(new Font("Tahoma", Font.PLAIN, 17));
+		lblUnatendedDemand.setForeground(Color.WHITE);
+		lblUnatendedDemand.setBounds(177, 144, 150, 26);
+		add(lblUnatendedDemand);
+		
+		txtUnatendedDemand = new JTextField("" + unatendedDemand);
+		txtUnatendedDemand.setBounds(336, 144, 167, 26);
+		txtUnatendedDemand.setColumns(10);
+		txtUnatendedDemand.setEditable(false);
+		add(txtUnatendedDemand);
+		
+		lblMaxDemand = new JLabel("Max Demand ");
+		lblMaxDemand.setFont(new Font("Tahoma", Font.PLAIN, 17));
+		lblMaxDemand.setForeground(Color.WHITE);
+		lblMaxDemand.setBounds(177, 178, 150, 26);
+		add(lblMaxDemand);
+		
+		txtMaxDemand = new JTextField("" + maxDemand);
+		txtMaxDemand.setBounds(336, 178, 167, 26);
+		txtMaxDemand.setColumns(10);
+		txtMaxDemand.setEditable(false);
+		add(txtMaxDemand);
+		
+		lblFOBienestar = new JLabel("Wellness OF ");
 		lblFOBienestar.setFont(new Font("Tahoma", Font.PLAIN, 17));
 		lblFOBienestar.setForeground(Color.WHITE);
-		lblFOBienestar.setBounds(177, 144, 150, 26);
+		lblFOBienestar.setBounds(177, 212, 150, 26);
 		add(lblFOBienestar);
 		
 		txtFuncionObjetivoBienestar = new JTextField();
 		txtFuncionObjetivoBienestar.setText("" + df.format(wellnessFO));
-		txtFuncionObjetivoBienestar.setBounds(336, 144, 167, 26);
+		txtFuncionObjetivoBienestar.setBounds(336, 212, 167, 26);
 		txtFuncionObjetivoBienestar.setColumns(10);
 		txtFuncionObjetivoBienestar.setEditable(false);
 		add(txtFuncionObjetivoBienestar);
 		
-		lblFOVariability = new JLabel("Variability FO ");
+		lblFOVariability = new JLabel("Variability OF ");
 		lblFOVariability.setFont(new Font("Tahoma", Font.PLAIN, 17));
 		lblFOVariability.setForeground(Color.WHITE);
-		lblFOVariability.setBounds(177, 178, 150, 26);
+		lblFOVariability.setBounds(177, 246, 150, 26);
 		add(lblFOVariability);
 		
 		txtVariability = new JTextField();
 		txtVariability.setText("" + 0);
-		txtVariability.setBounds(336, 178, 167, 26);
+		txtVariability.setBounds(336, 246, 167, 26);
 		txtVariability.setColumns(10);
 		txtVariability.setEditable(false);
 		add(txtVariability);
@@ -126,12 +154,12 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		lblRoutes = new JLabel("Number of Routes ");
 		lblRoutes .setFont(new Font("Tahoma", Font.PLAIN, 17));
 		lblRoutes .setForeground(Color.WHITE);
-		lblRoutes .setBounds(177, 212, 150, 26);
+		lblRoutes .setBounds(177, 280, 150, 26);
 		add(lblRoutes );
 		
 		txtRoutes = new JTextField();
 		txtRoutes.setText("" + numRoutes);
-		txtRoutes.setBounds(336, 212, 167, 26);
+		txtRoutes.setBounds(336, 280, 167, 26);
 		txtRoutes.setColumns(10);
 		txtRoutes.setEditable(false);
 		add(txtRoutes);
@@ -154,7 +182,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		}
 		
 		barraArrastre = new JScrollPane();
-		barraArrastre.setBounds(18, 250, 650, 300);
+		barraArrastre.setBounds(18, 320, 650, 270);
 		add(barraArrastre);
 		tblAgentes = new JTable();
 		barraArrastre.setViewportView(tblAgentes);

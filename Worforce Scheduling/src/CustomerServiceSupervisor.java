@@ -295,18 +295,15 @@ public class CustomerServiceSupervisor extends Agent{
 					repliesCnt++;
 					if(!firstIteration) {
 						if(repliesCnt == serviceAgents.length * population) {
-							//System.out.println("Total messages received from agents: " + repliesCnt);
 							step = 3;
 						}
 					}else {
 						if(repliesCnt == expectedReplies) {
-							//System.out.println("Total messages received from agents: " + repliesCnt);
 							step = 6;
 						}
 					}
 				}
 				else {
-					System.out.println("***************");
 					block(10000);
 				}
 				break;
@@ -345,11 +342,9 @@ public class CustomerServiceSupervisor extends Agent{
 				ArrayList<Chromosome> auxGeneration = new ArrayList<Chromosome>();
 				ArrayList<Boolean> auxBoolean = new ArrayList<Boolean>();
 				int elit = Math.round(population * elitRate);
-				//double bestFO = 1000000000;
 				Random rand = new Random();
 				if(iterations == maxIteration) {
-					System.out.println("Finished iterating...");
-					System.out.println("The best chromosome is: "+bestChromosomes.get(bestChromosomes.size()-1).getFO());
+					System.out.println("Finished genetic algorithm for the personnel scheduling...");
 					step = 7;
 					
 				} else {
@@ -363,19 +358,18 @@ public class CustomerServiceSupervisor extends Agent{
 						public int compare(Chromosome o1, Chromosome o2) {
 							return Double.compare(o2.getFitness(), o1.getFitness()) ;
 						}
-					});
-					
-					//TODO: Asignar al vector de mejores el primer mancito
+					});					
 					bestChromosomes.add(chromosomes.get(0));
 					if (bestChromosomes.size() > 1) {
 						int pos = bestChromosomes.size()-1;
 						double diff = Math.abs(bestChromosomes.get(pos).getFitness()- bestChromosomes.get(pos-1).getFitness())/
 								bestChromosomes.get(pos).getFitness();
 						if(diff<threshold) {
-							System.out.println("I have "+iterations+" iterations");
+							System.out.println("I have " + iterations + " iterations...");
 							iterations++;
 						}
 						else {
+							System.out.println("Iterations restarted...");
 							iterations = 0;
 						}
 					}else {
@@ -445,21 +439,22 @@ public class CustomerServiceSupervisor extends Agent{
 		}
 		public void sendBestSolution() {
 			ArrayList<String[][]> timeslots;
-			Double bestFo;
+			double bestFo;
+			double max;
+			double unatended;
 			ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
 			cfp.addReceiver(airline[0]);
 			cfp.setConversationId("best-schedule");
-			timeslots= bestChromosomes.get(bestChromosomes.size()-1).getTimesolts();
-			bestFo = bestChromosomes.get(bestChromosomes.size()-1).getFO();
-			System.out.println("Unatended A: " + bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandA());
-			System.out.println("Unatended B: " + bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandB());
-			System.out.println("Unatended C: " + bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandC());
-			System.out.println("Max demand: " + bestChromosomes.get(bestChromosomes.size() - 1).getMaxDemand());
-			Object[] params = {timeslots,bestFo};
+			timeslots= bestChromosomes.get(bestChromosomes.size() - 1).getTimesolts();
+			bestFo = bestChromosomes.get(bestChromosomes.size() - 1).getFO();
+			max = bestChromosomes.get(bestChromosomes.size() - 1).getMaxDemand();
+			unatended = bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandA() +
+					    bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandB() + 
+				 	    bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandC();
+			Object[] params = {timeslots,bestFo, max, unatended};
 			try {
 				cfp.setContentObject(params);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			myAgent.send(cfp);

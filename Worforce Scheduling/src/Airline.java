@@ -27,6 +27,8 @@ public class Airline extends Agent{
 	private AID transport;
 	private ArrayList<String[][]> timeslots;
 	private double schedulingFO;
+	private double maxDemand;
+	private double unatendedDemand;
 	@Override
 	protected void setup() {
 
@@ -104,6 +106,8 @@ public class Airline extends Agent{
 					schedule = (ArrayList<String[][]>) args[0];
 					timeslots = schedule;
 					schedulingFO = (Double) args[1];
+					maxDemand = (Double) args[2];
+					unatendedDemand = (Double) args[3];
 				} catch (UnreadableException e) {
 					e.printStackTrace();
 				}
@@ -135,7 +139,7 @@ public class Airline extends Agent{
 			cfp.addReceiver(transport);
 			cfp.setConversationId("routing");
 			try {
-				Object[] params = {schedulingFO, timeslots};
+				Object[] params = {schedulingFO, timeslots, maxDemand, unatendedDemand};
 				cfp.setContentObject(params);
 				myAgent.send(cfp);
 			} catch (IOException e) {

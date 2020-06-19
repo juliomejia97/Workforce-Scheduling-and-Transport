@@ -72,7 +72,7 @@ public class TransportSupervisorGUI extends JPanel {
 		add(lblTitulo);
 		
 		
-		lblFOTotal = new JLabel("Wellness FO ");
+		lblFOTotal = new JLabel("Wellness OF ");
 		lblFOTotal.setFont(new Font("Tahoma", Font.PLAIN, 17));
 		lblFOTotal.setForeground(Color.WHITE);
 		lblFOTotal.setBounds(177, 73, 100, 26);
