@@ -46,6 +46,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 	private JScrollPane barraArrastre;
 	private JTable tblAgentes;
 	private Agent myAgent;
+	private DefaultTableModel model;
 	
 	public AirlineGUI(Agent a, ArrayList<String[][]> schedule, double FO, double wellnessFO, double numRoutes, double maxDemand, double unatendedDemand) {
 		
@@ -186,8 +187,12 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		add(barraArrastre);
 		tblAgentes = new JTable();
 		barraArrastre.setViewportView(tblAgentes);
-		tblAgentes.setModel(new DefaultTableModel(agentData, header));
-		
+		model = new DefaultTableModel();
+		model.setColumnIdentifiers(header);
+		for(List<String> actual:agentData) {
+			model.addRow((Vector<?>) actual);
+		}
+		tblAgentes.setModel(model);
 		menu.getContentPane().add(this);
 		menu.setResizable(false);
 		menu.setVisible(true);
