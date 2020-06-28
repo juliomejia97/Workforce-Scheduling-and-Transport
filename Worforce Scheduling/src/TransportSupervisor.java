@@ -7,6 +7,8 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
@@ -115,7 +117,7 @@ public class TransportSupervisor extends Agent {
 	public void setTimeSolt(ArrayList<String[][]> timeSolt) {
 		this.timeSolt = timeSolt;
 	}
-	
+
 	public double getSchedulingFO() {
 		return schedulingFO;
 	}
@@ -260,7 +262,7 @@ public class TransportSupervisor extends Agent {
 	}
 
 	private class routing extends Behaviour{
-		
+
 		private static final long serialVersionUID = 1L;
 		private int step = 0;
 		private int cantLeaders = 0;
@@ -269,8 +271,8 @@ public class TransportSupervisor extends Agent {
 		private HashMap<String, ArrayList<Integer>> leadersReturn;
 		private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesGoing = new HashMap<String, ArrayList<ArrayList<Integer>>>();
 		private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesReturn = new HashMap<String, ArrayList<ArrayList<Integer>>>();
-		
-		
+
+
 		@Override
 		public void action() {
 			switch (step) {
@@ -283,19 +285,19 @@ public class TransportSupervisor extends Agent {
 			case 1:
 				//Send to leaders and no leaders the quality of message that the must recive
 				sendMessageNonLeadersGoing();
-				sendMessageLeadersGoing();
 				sendMessageNonLeadersReturn();
+				sendMessageLeadersGoing();
 				sendMessageLeadersReturn();
 				step = 2;
 				break;
 			case 2:
 				//Recive the message of leaders
 				MessageTemplate mt = MessageTemplate.or(MessageTemplate.and(MessageTemplate.MatchConversationId("route-as-leaderGoing"),
-				MessageTemplate.MatchPerformative(ACLMessage.INFORM)), MessageTemplate.and(MessageTemplate.MatchConversationId("route-as-leaderReturn"),
-						MessageTemplate.MatchPerformative(ACLMessage.INFORM)));
-				
+						MessageTemplate.MatchPerformative(ACLMessage.INFORM)), MessageTemplate.and(MessageTemplate.MatchConversationId("route-as-leaderReturn"),
+								MessageTemplate.MatchPerformative(ACLMessage.INFORM)));
+
 				ACLMessage msg = myAgent.receive(mt);
-				
+
 				if(msg != null) {
 					msgReceived++;
 					try {
@@ -328,18 +330,18 @@ public class TransportSupervisor extends Agent {
 					} catch (UnreadableException e) {
 						e.printStackTrace();
 					}
-					
+
 					if(cantLeaders == msgReceived) {
 						step = 3;
 					}
-					
+
 				} else {
 					block();
 				}
-								
+
 				break;
 			case 3:
-				
+
 				step = 4;
 				break;
 			case 4:
@@ -357,9 +359,9 @@ public class TransportSupervisor extends Agent {
 		public boolean done() {
 			return (step == 5);
 		}
-		
+
 		private double calculateRoutingFO() {
-			
+
 			double FO = 0;
 			double N = 0; //Employees that the airline transport
 			double NRoutes = 0; //How many vehicles i have
@@ -370,7 +372,7 @@ public class TransportSupervisor extends Agent {
 			double additionalKm = 0;
 			double idealKm = 0;
 			double indirectRoutes = 0;
-			
+
 			for(Map.Entry<String, ArrayList<ArrayList<Integer>>> allVehiclesGoing: vehiclesGoing.entrySet()) {
 				ArrayList<ArrayList<Integer>> vehicles = allVehiclesGoing.getValue();
 				for(ArrayList<Integer> vehicleDay: vehicles) {
@@ -384,7 +386,7 @@ public class TransportSupervisor extends Agent {
 					}
 				}
 			}
-			
+
 			for(Map.Entry<String, ArrayList<ArrayList<Integer>>> allVehiclesReturn: vehiclesReturn.entrySet()) {
 				ArrayList<ArrayList<Integer>> vehicles = allVehiclesReturn.getValue();
 				for(ArrayList<Integer> vehicleDay: vehicles) {
@@ -398,28 +400,28 @@ public class TransportSupervisor extends Agent {
 					}
 				}
 			}
-			
+
 			efficiency = N / NRoutes;
 			promAdditionalKm = additionalKm / indirectRoutes;
 			promIdealKm = idealKm / N;
 			FO = promAdditionalKm / promIdealKm;
-			
+
 			new TransportSupervisorGUI(vehiclesGoing, vehiclesReturn, efficiency, promAdditionalKm, promIdealKm);
 			new AirlineGUI(myAgent, timeSolt, schedulingFO, FO, NRoutes, maxDemand, unatendedDemand);
-			
+
 			return FO;
-			
+
 		}
-		
+
 		private double calculateKmAgentGoing(int idAgent, ArrayList<Integer> vehicle) {
-			
+
 			double km = 0;
 			boolean start = false;
-			
+
 			if(vehicle.size() == 1) {
 				return distances[idAgent][0];
 			}
-			
+
 			for(int i = 0; i < vehicle.size() - 1; i++) {
 				if(vehicle.get(i) == idAgent) {
 					start = true;
@@ -428,26 +430,26 @@ public class TransportSupervisor extends Agent {
 					km += distances[vehicle.get(i)][vehicle.get(i + 1)];
 				}
 			}
-			
+
 			km += distances[vehicle.get(vehicle.size() - 1)][0];
-						
+
 			return km;
 		}
-		
+
 		private double calculateKmAgentReturn(int idAgent, ArrayList<Integer> vehicle) {
-			
+
 			double km = 0;
-			
+
 			if(vehicle.size() == 1) {
 				return distances[0][idAgent];
 			}
-			
+
 			km += distances[0][vehicle.get(0)];
-						
+
 			for(int i = 0; i < vehicle.indexOf(idAgent); i++) {
 				km += distances[vehicle.get(i)][vehicle.get(i + 1)];
 			}
-									
+
 			return km;
 		}
 
@@ -489,13 +491,13 @@ public class TransportSupervisor extends Agent {
 						farLeader = distances[actual][0];
 					}
 				}
-				
+
 				lst.add(leader);
 				i++;
 			}
 			return lst;
 		}
-		
+
 		private ArrayList<Integer> getLeaderReturn(ArrayList<Integer> agents, int cantLeaders){
 			int leader = -1;
 			ArrayList<Integer> lst = new ArrayList<Integer>();
@@ -515,39 +517,39 @@ public class TransportSupervisor extends Agent {
 			}
 			return lst;
 		}
-		
+
 		public void removeLeaders(String dayHour, ArrayList<Integer> leaders, int caso) {
-			
+
 			if(caso == 1) {
-				
+
 				ArrayList<Integer> nonLeaders = new ArrayList<Integer>();
-				
+
 				ArrayList<Integer> agents = ida.get(dayHour);
 				for(int i = 0; i < agents.size(); i++) {
 					if(!leaders.contains(agents.get(i))) {
 						nonLeaders.add(agents.get(i));
 					}
 				}
-				
+
 				ida.put(dayHour, nonLeaders);
-				
+
 			} else {
-				
+
 				ArrayList<Integer> nonLeaders = new ArrayList<Integer>();
-				
+
 				ArrayList<Integer> agents = vuelta.get(dayHour);
 				for(int i = 0; i < agents.size(); i++) {
 					if(!leaders.contains(agents.get(i))) {
 						nonLeaders.add(agents.get(i));
 					}
 				}
-				
+
 				vuelta.put(dayHour, nonLeaders);
-				
+
 			}
-			
+
 		}
-		
+
 		private void sendMessageLeadersGoing() {
 
 			for(Map.Entry<String, ArrayList<Integer>> actual:leadersGoing.entrySet()) {
@@ -571,9 +573,9 @@ public class TransportSupervisor extends Agent {
 				}
 			}
 		}
-		
+
 		private void sendMessageNonLeadersGoing() {
-			
+
 			for(Map.Entry<String, ArrayList<Integer>> actual: ida.entrySet()) {
 				for(Integer agent: actual.getValue()) {
 					AID recep= getAgent(agent);
@@ -591,9 +593,9 @@ public class TransportSupervisor extends Agent {
 					}	
 				}
 			}
-			
+
 		}
-		
+
 		private void sendMessageLeadersReturn() {
 
 			for(Map.Entry<String, ArrayList<Integer>> actual: leadersReturn.entrySet()) {
@@ -617,9 +619,9 @@ public class TransportSupervisor extends Agent {
 				}
 			}
 		}
-		
+
 		private void sendMessageNonLeadersReturn() {
-			
+
 			for(Map.Entry<String, ArrayList<Integer>> actual: vuelta.entrySet()) {
 				for(Integer agent: actual.getValue()) {
 					AID recep= getAgent(agent);
@@ -637,7 +639,7 @@ public class TransportSupervisor extends Agent {
 					}	
 				}
 			}
-			
+
 		}
 
 		private AID getAgent(int numAgente) {

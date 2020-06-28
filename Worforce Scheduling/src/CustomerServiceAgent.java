@@ -3,6 +3,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.security.KeyStore.Entry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -711,7 +712,11 @@ public class CustomerServiceAgent extends Agent{
 			ACLMessage msg = myAgent.receive(mt);
 			if(msg != null) {
 				String dayHour = msg.getContent();
-				expectedProposesGoing.put(dayHour, expectedProposesGoing.get(dayHour) - 1);
+				try {
+					expectedProposesGoing.put(dayHour, expectedProposesGoing.get(dayHour) - 1);
+				}catch (NullPointerException e) {
+					System.out.println("Tuve errores con este valor: "+dayHour+" : "+expectedProposesGoing.get(dayHour));
+				}
 
 				if(leaders.get(dayHour) != null) {
 					ArrayList<AID> agents = leaders.get(dayHour);
@@ -793,8 +798,11 @@ public class CustomerServiceAgent extends Agent{
 			ACLMessage msg = myAgent.receive(mt);
 			if(msg != null) {
 				String dayHour = msg.getContent();
-				expectedProposesReturn.put(dayHour, expectedProposesReturn.get(dayHour) - 1);
-
+				try {
+					expectedProposesReturn.put(dayHour, expectedProposesReturn.get(dayHour) - 1);
+				}catch (NullPointerException e) {
+					System.out.println("Tuve errores con este valor: "+dayHour+" : "+expectedProposesReturn.get(dayHour));
+				}
 				if(leaders.get(dayHour) != null) {
 					ArrayList<AID> agents = leaders.get(dayHour);
 					agents.add(msg.getSender());
