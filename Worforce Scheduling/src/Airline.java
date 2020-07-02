@@ -79,8 +79,9 @@ public class Airline extends Agent{
 			fe.printStackTrace();
 		}
 		
-		myInterface = new AirlineGUI(this, new ArrayList<String[][]>(), 10, 10, 10, 10, 10);
+		myInterface = new AirlineGUI(this, new ArrayList<String[][]>(), 0, 0, 0, 0, 0);
 		addBehaviour(new bestSchedule());
+		addBehaviour(new resultRouting());
 	}
 	
 	public AirlineGUI getMyInterface() {
@@ -160,14 +161,24 @@ public class Airline extends Agent{
 	private class resultRouting extends CyclicBehaviour {
 
 		private static final long serialVersionUID = 1L;
-		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("routing"),
+		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("display"),
 				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
 		@Override
 		public void action() {
 			// TODO Auto-generated method stub
-			ACLMessage msg = myAgent.receive();
+			ACLMessage msg = myAgent.receive(mt);
 			if(msg!=null) {
-				//Obtener parámetros y actualizar GUI
+				try {
+					Object[] params = (Object[]) msg.getContentObject();
+					double wellnessFO = (double) params[0];
+					double nRoutes = (double) params[1];
+					myInterface.displayFO(timeslots, schedulingFO, wellnessFO, nRoutes, maxDemand, unatendedDemand);
+				} catch (UnreadableException e) {
+					e.printStackTrace();
+				}
+				
+			}else {
+				block();
 			}
 		}
 	}

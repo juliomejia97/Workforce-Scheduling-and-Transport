@@ -411,15 +411,14 @@ public class TransportSupervisor extends Agent {
 
 			new TransportSupervisorGUI(vehiclesGoing, vehiclesReturn, efficiency, promAdditionalKm, promIdealKm);
 			
-			//Send Message to my airline
 			ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
-			cfp.setConversationId("routing");
+			cfp.setConversationId("display");
 			cfp.addReceiver(airline);
 			Object[] params = {FO, NRoutes};
 			try {
 				cfp.setContentObject(params);
+				myAgent.send(cfp);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			return FO;
