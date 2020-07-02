@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -45,10 +46,11 @@ public class AirlineGUI extends JPanel implements WindowListener{
 	private JTextField txtRoutes;
 	private JScrollPane barraArrastre;
 	private JTable tblAgentes;
-	private Agent myAgent;
+	private JButton btnPeak;
+	private Airline myAgent;
 	private DefaultTableModel model;
 	
-	public AirlineGUI(Agent a, ArrayList<String[][]> schedule, double FO, double wellnessFO, double numRoutes, double maxDemand, double unatendedDemand) {
+	public AirlineGUI(Airline a, ArrayList<String[][]> schedule, double FO, double wellnessFO, double numRoutes, double maxDemand, double unatendedDemand) {
 		
 		myAgent = a;
 		menu = new JFrame();
@@ -165,22 +167,22 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		txtRoutes.setEditable(false);
 		add(txtRoutes);
 			
-		for(int i = 0; i < 75; i++) {
-			
-			view = new Vector<String>();
-			view.add("Agent " + (i + 1));
-			String[][] sch = schedule.get(i);
-			String hour = sch[0][0].split(" ")[1];
-			for(int j = 0; j < 8; j++) {
-				if(sch[j][1].equalsIgnoreCase("LLLL")) {
-					view.add("Libre");
-				}else {
-					view.add("" + hour + "-" + sch[j][1].toLowerCase());
-				}
-			}
-
-			agentData.add(view);
-		}
+//		for(int i = 0; i < 75; i++) {
+//			
+//			view = new Vector<String>();
+//			view.add("Agent " + (i + 1));
+//			String[][] sch = schedule.get(i);
+//			String hour = sch[0][0].split(" ")[1];
+//			for(int j = 0; j < 8; j++) {
+//				if(sch[j][1].equalsIgnoreCase("LLLL")) {
+//					view.add("Libre");
+//				}else {
+//					view.add("" + hour + "-" + sch[j][1].toLowerCase());
+//				}
+//			}
+//
+//			agentData.add(view);
+//		}
 		
 		barraArrastre = new JScrollPane();
 		barraArrastre.setBounds(18, 320, 650, 270);
@@ -196,6 +198,20 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		menu.getContentPane().add(this);
 		menu.setResizable(false);
 		menu.setVisible(true);
+		
+		btnPeak = new JButton("Start Peak");
+		btnPeak.setFont(new Font("Tahoma", Font.PLAIN, 17));
+		btnPeak.setForeground(Color.RED);
+		btnPeak.setBounds(270, 600, 150, 26);
+		add(btnPeak);
+		
+		btnPeak.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				myAgent.peakDemand("Mar", "13:30", "A", 10);
+			}
+		});
 		
 	}
 

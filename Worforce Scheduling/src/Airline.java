@@ -25,6 +25,7 @@ public class Airline extends Agent{
 	private ContainerController container;
 	private AirlineGUI myInterface;
 	private AID transport;
+	private AID scheduler;
 	private ArrayList<String[][]> timeslots;
 	private double schedulingFO;
 	private double maxDemand;
@@ -77,6 +78,8 @@ public class Airline extends Agent{
 		catch (FIPAException fe) {
 			fe.printStackTrace();
 		}
+		
+		myInterface = new AirlineGUI(this, new ArrayList<String[][]>(), 10, 10, 10, 10, 10);
 		addBehaviour(new bestSchedule());
 	}
 	
@@ -88,6 +91,9 @@ public class Airline extends Agent{
 		this.myInterface = myInterface;
 	}
 	
+	public void peakDemand(String day, String hour, String activity, int increment) {
+		addBehaviour(new demandPerturbation("Mar","13:00","A",10));
+	}
 	private class bestSchedule extends CyclicBehaviour {
 		
 		private static final long serialVersionUID = 1L;
@@ -108,6 +114,7 @@ public class Airline extends Agent{
 					schedulingFO = (Double) args[1];
 					maxDemand = (Double) args[2];
 					unatendedDemand = (Double) args[3];
+					scheduler = msg.getSender();
 				} catch (UnreadableException e) {
 					e.printStackTrace();
 				}
@@ -146,6 +153,53 @@ public class Airline extends Agent{
 				e.printStackTrace();
 			}
 			
+		}
+		
+	}
+	
+	private class resultRouting extends CyclicBehaviour {
+
+		private static final long serialVersionUID = 1L;
+		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("routing"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+		@Override
+		public void action() {
+			// TODO Auto-generated method stub
+			ACLMessage msg = myAgent.receive();
+			if(msg!=null) {
+				//Obtener parámetros y actualizar GUI
+			}
+		}
+	}
+	
+	private class demandPerturbation extends OneShotBehaviour{
+		private static final long serialVersionUID = 1L;
+		String day;
+		String hour;
+		String activity;
+		int increment;
+
+		public demandPerturbation(String pDay, String pHour, String pActivity, int pIncrement) {
+			day = pDay;
+			hour = pHour;
+			activity = pActivity;
+			increment = pIncrement;
+		}
+
+		@Override
+		public void action() {
+			//Read from GUI parameters
+			ACLMessage cfp = new ACLMessage(ACLMessage.REQUEST);
+			cfp.addReceiver(scheduler);
+			cfp.setConversationId("peak-demand");
+			Object[] params = {day,hour,activity+increment};
+			try {
+				cfp.setContentObject(params);
+				myAgent.send(cfp);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		
 	}

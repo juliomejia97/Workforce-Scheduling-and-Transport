@@ -437,6 +437,22 @@ public class CustomerServiceSupervisor extends Agent{
 				}
 			}
 		}
+		public void sendDecision(AID agente) {
+			int idAgent;
+			ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
+			cfp.addReceiver(agente);
+			cfp.setConversationId("report-decision");
+			idAgent = Integer.parseInt(agente.getName().split(" ")[1].split("@")[0]) - 1;
+			try {
+				cfp.setContentObject(bestChromosomes.get(bestChromosomes.size()-1).getSolution().get(idAgent));
+				myAgent.send(cfp);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+				
+			
+		}
 		public void sendBestSolution() {
 			ArrayList<String[][]> timeslots;
 			double bestFo;
@@ -458,6 +474,9 @@ public class CustomerServiceSupervisor extends Agent{
 				e.printStackTrace();
 			}
 			myAgent.send(cfp);
+			for (int i = 0; i < serviceAgents.length; ++i) {
+				sendDecision(serviceAgents[i]);
+			}
 		}
 		
 	}

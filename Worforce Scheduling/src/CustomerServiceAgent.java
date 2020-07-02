@@ -30,6 +30,7 @@ public class CustomerServiceAgent extends Agent{
 	private boolean actA;
 	private boolean actB;
 	private boolean actC;
+	private String[][] mySchudule;
 	private HashMap<String, Boolean> days = new HashMap<String, Boolean>();
 	private HashMap<String, Integer> expectedProposesGoing = new HashMap<String, Integer>();
 	private HashMap<String, Integer> expectedRepliesGoing = new HashMap<String, Integer>();
@@ -122,6 +123,7 @@ public class CustomerServiceAgent extends Agent{
 		addBehaviour(new ReceiveExpectedProposesReturn());
 		addBehaviour(new ReceiveDecisionsGoing());
 		addBehaviour(new ReceiveDecisionsReturn());
+		addBehaviour(new reciveSchedule());
 
 	}
 
@@ -182,8 +184,6 @@ public class CustomerServiceAgent extends Agent{
 			int chr;
 			String[][] config;
 			String message;
-			String selection;
-			String date;
 			if (msg != null) {
 				message = (String) msg.getContent();
 				chr = Integer.parseInt(message.split(" ")[0]);
@@ -194,81 +194,7 @@ public class CustomerServiceAgent extends Agent{
 				if(position>0) {
 					position--;
 				}
-				config = new String[8][2];
-				date = getHour(hour);
-				selection = opcions.get(position);
-				for(Map.Entry<String, Boolean> actual: days.entrySet()) {
-					String key = actual.getKey();
-					Boolean value = actual.getValue();
-					switch (key) {
-					case "Mar":
-						config[0][0] = "Mar "+date;
-						if(value) {
-							config[0][1] = selection;
-						}else {
-							config[0][1] = "LLLL";
-						}
-						break;
-					case "Mie":
-						config[1][0] = "Mie "+date;
-						if(value) {
-							config[1][1] = selection;
-						}else {
-							config[1][1] = "LLLL";
-						}
-						break;
-					case "Jue":
-						config[2][0] = "Jue "+date;
-						if(value) {
-							config[2][1] = selection;
-						}else {
-							config[2][1] = "LLLL";
-						}
-						break;
-					case "Vie":
-						config[3][0] = "Vie "+date;
-						if(value) {
-							config[3][1] = selection;
-						}else {
-							config[3][1] = "LLLL";
-						}
-						break;
-					case "Sab":
-						config[4][0] = "Sab "+date;
-						if(value) {
-							config[4][1] = selection;
-						}else {
-							config[4][1] = "LLLL";
-						}
-						break;
-					case "Dom":
-						config[5][0] = "Dom "+date;
-						if(value) {
-							config[5][1] = selection;
-						}else {
-							config[5][1] = "LLLL";
-						}
-						break;
-					case "Lun":
-						config[6][0] = "Lun "+date;
-						if(value) {
-							config[6][1] = selection;
-						}else {
-							config[6][1] = "LLLL";
-						}
-						break;
-					case "Mar2":
-						config[7][0] = "Mar2 "+date;
-						if(value) {
-							config[7][1] = selection;
-						}else {
-							config[7][1] = "LLLL";
-						}
-						break;
-					default:
-						break;
-					}
-				}
+				config = generateSchedule(hour, position);
 				ACLMessage reply = msg.createReply();
 				reply.setPerformative(ACLMessage.INFORM);
 				reply.setConversationId("report-option");
@@ -287,23 +213,6 @@ public class CustomerServiceAgent extends Agent{
 			}
 		}
 
-		public String getHour(int hour) {
-			String select;
-			select = "";
-			int entero = hour / 2;
-			if(entero < 10) {
-				select = "0" + select + entero ;
-			}else {
-				select = select + entero ;
-			}
-			if(hour%2!=0) {
-				select = select + ":30";
-			}else {
-				select = select + ":00";
-			}
-
-			return select;
-		}
 	} 
 	
 	private class asLeaderGoing extends CyclicBehaviour {
@@ -865,5 +774,132 @@ public class CustomerServiceAgent extends Agent{
 			}
 
 		}
+	}
+	
+	private class reciveSchedule extends CyclicBehaviour {
+
+		private static final long serialVersionUID = 1L;
+		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("report-decision"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+
+		@Override
+		public void action() {
+			// TODO Auto-generated method stub
+			ACLMessage msg = myAgent.receive(mt);
+			if(msg!=null) {
+				try {
+					Double info = (Double) msg.getContentObject();
+					double permutation = info%1;
+					int hour = (int) (info - permutation);
+					int position = (int) Math.round(permutation*opcions.size());
+					if(position>0) {
+						position--;
+					}
+					mySchudule = generateSchedule(hour, position);
+				} catch (UnreadableException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}else {
+				block();
+			}
+			
+		}
+		
+	}
+	private String[][] generateSchedule(int hour, int position){
+		String[][] config = new String[8][2];
+		String date = getHour(hour);
+		String selection = opcions.get(position);
+		for(Map.Entry<String, Boolean> actual: days.entrySet()) {
+			String key = actual.getKey();
+			Boolean value = actual.getValue();
+			switch (key) {
+			case "Mar":
+				config[0][0] = "Mar "+date;
+				if(value) {
+					config[0][1] = selection;
+				}else {
+					config[0][1] = "LLLL";
+				}
+				break;
+			case "Mie":
+				config[1][0] = "Mie "+date;
+				if(value) {
+					config[1][1] = selection;
+				}else {
+					config[1][1] = "LLLL";
+				}
+				break;
+			case "Jue":
+				config[2][0] = "Jue "+date;
+				if(value) {
+					config[2][1] = selection;
+				}else {
+					config[2][1] = "LLLL";
+				}
+				break;
+			case "Vie":
+				config[3][0] = "Vie "+date;
+				if(value) {
+					config[3][1] = selection;
+				}else {
+					config[3][1] = "LLLL";
+				}
+				break;
+			case "Sab":
+				config[4][0] = "Sab "+date;
+				if(value) {
+					config[4][1] = selection;
+				}else {
+					config[4][1] = "LLLL";
+				}
+				break;
+			case "Dom":
+				config[5][0] = "Dom "+date;
+				if(value) {
+					config[5][1] = selection;
+				}else {
+					config[5][1] = "LLLL";
+				}
+				break;
+			case "Lun":
+				config[6][0] = "Lun "+date;
+				if(value) {
+					config[6][1] = selection;
+				}else {
+					config[6][1] = "LLLL";
+				}
+				break;
+			case "Mar2":
+				config[7][0] = "Mar2 "+date;
+				if(value) {
+					config[7][1] = selection;
+				}else {
+					config[7][1] = "LLLL";
+				}
+				break;
+			default:
+				break;
+			}
+		}
+		return config;
+	}
+	public String getHour(int hour) {
+		String select;
+		select = "";
+		int entero = hour / 2;
+		if(entero < 10) {
+			select = "0" + select + entero ;
+		}else {
+			select = select + entero ;
+		}
+		if(hour%2!=0) {
+			select = select + ":30";
+		}else {
+			select = select + ":00";
+		}
+
+		return select;
 	}
 }
