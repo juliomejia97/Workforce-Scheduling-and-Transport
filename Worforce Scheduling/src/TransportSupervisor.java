@@ -32,6 +32,7 @@ public class TransportSupervisor extends Agent {
 	private double maxDemand;
 	private double unatendedDemand;
 	private Double[][] distances;
+	private AID airline;
 	private AID[] agents;
 
 	@Override
@@ -138,11 +139,13 @@ public class TransportSupervisor extends Agent {
 			ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
 				try {
+					//Quitar el tema de scheduling
 					Object[] params = (Object[]) msg.getContentObject();
 					setTimeSolt((ArrayList<String[][]>) params[1]);
 					setSchedulingFO((double) params[0]);
 					setMaxDemand((double) params[2]);
 					setUnatendedDemand((double) params[3]);
+					airline = msg.getSender();
 					extractPossibleRoutes();
 				} catch (UnreadableException e) {
 					e.printStackTrace();
@@ -407,8 +410,18 @@ public class TransportSupervisor extends Agent {
 			FO = promAdditionalKm / promIdealKm;
 
 			new TransportSupervisorGUI(vehiclesGoing, vehiclesReturn, efficiency, promAdditionalKm, promIdealKm);
-			new AirlineGUI(myAgent, timeSolt, schedulingFO, FO, NRoutes, maxDemand, unatendedDemand);
-
+			
+			//Send Message to my airline
+			ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
+			cfp.setConversationId("routing");
+			cfp.addReceiver(airline);
+			Object[] params = {FO, NRoutes};
+			try {
+				cfp.setContentObject(params);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			return FO;
 
 		}
