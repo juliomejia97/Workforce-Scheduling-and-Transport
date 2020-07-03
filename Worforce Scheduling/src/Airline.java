@@ -95,6 +95,8 @@ public class Airline extends Agent{
 	public void peakDemand(String day, String hour, String activity, int increment) {
 		addBehaviour(new OneShotBehaviour() {
 			
+			private static final long serialVersionUID = 1L;
+
 			@Override
 			public void action() {
 				//Read from GUI parameters
@@ -106,7 +108,6 @@ public class Airline extends Agent{
 					cfp.setContentObject(params);
 					myAgent.send(cfp);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -182,7 +183,6 @@ public class Airline extends Agent{
 				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
 		@Override
 		public void action() {
-			// TODO Auto-generated method stub
 			ACLMessage msg = myAgent.receive(mt);
 			if(msg!=null) {
 				try {
@@ -225,7 +225,6 @@ public class Airline extends Agent{
 //				cfp.setContentObject(params);
 //				myAgent.send(cfp);
 //			} catch (IOException e) {
-//				// TODO Auto-generated catch block
 //				e.printStackTrace();
 //			}
 //		}

@@ -3,10 +3,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import jade.core.AID;
 import jade.core.Agent;
@@ -347,13 +349,13 @@ public class CustomerServiceSupervisor extends Agent{
 				if(iterations == maxIteration) {
 					System.out.println("Finished genetic algorithm for the personnel scheduling...");
 					step = 7;
-					
+
 				} else {
 					System.out.println("Starting generation " + (bestChromosomes.size()+1) + "...");
 					for(Chromosome actual: chromosomes) {
 						if (!actual.isFoCalculated()) actual.calculateSchedulingFO(actA, actB, actC, breaks);
 					}
-					
+
 					//Sort by the fitness of each chromosome (High to low)
 					Collections.sort(chromosomes, new Comparator<Chromosome>() {
 						public int compare(Chromosome o1, Chromosome o2) {
@@ -374,7 +376,7 @@ public class CustomerServiceSupervisor extends Agent{
 							iterations = 0;
 						}
 					}else {
-						
+
 						iterations++;
 					}
 					//Create the first new generation with the elitism rate and population
@@ -405,7 +407,7 @@ public class CustomerServiceSupervisor extends Agent{
 					for(int i = 0; i < newGeneration.size(); i++) {
 						chromosomes.add(newGeneration.get(i));
 					}
-					
+
 					step = 4;
 				}
 
@@ -448,11 +450,10 @@ public class CustomerServiceSupervisor extends Agent{
 				cfp.setContentObject(bestChromosomes.get(bestChromosomes.size()-1).getSolution().get(idAgent));
 				myAgent.send(cfp);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-				
-			
+
+
 		}
 		public void sendBestSolution() {
 			ArrayList<String[][]> timeslots;
@@ -466,8 +467,8 @@ public class CustomerServiceSupervisor extends Agent{
 			bestFo = bestChromosomes.get(bestChromosomes.size() - 1).getFO();
 			max = bestChromosomes.get(bestChromosomes.size() - 1).getMaxDemand();
 			unatended = bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandA() +
-					    bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandB() + 
-				 	    bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandC();
+					bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandB() + 
+					bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandC();
 			Object[] params = {timeslots,bestFo, max, unatended};
 			try {
 				cfp.setContentObject(params);
@@ -479,7 +480,7 @@ public class CustomerServiceSupervisor extends Agent{
 				sendDecision(serviceAgents[i]);
 			}
 		}
-		
+
 	}
 
 	public void selectFathers() {
@@ -496,7 +497,7 @@ public class CustomerServiceSupervisor extends Agent{
 			casino(rulette, ball, i);
 		}
 	}
-	
+
 	public void casino(ArrayList<Double> rulette, double ball, int pos) {
 		int papa1, papa2;
 		papa1 = 0;
@@ -620,26 +621,41 @@ public class CustomerServiceSupervisor extends Agent{
 		}
 		return swap;
 	}
-	
+
 	private class resolvePeak extends Behaviour{
 
 		private static final long serialVersionUID = 1L;
 		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("peak-demand"),
 				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
 		int step = 0;
+		int repliesCnt;
+		String dayHour;
+		String activity;
+		ArrayList<Object[]> agents = new ArrayList<Object[]>();
+		@SuppressWarnings("unchecked")
+		HashMap<String, Integer> pA = (HashMap<String, Integer>) actA.clone(); 
+		@SuppressWarnings("unchecked")
+		HashMap<String, Integer> pB = (HashMap<String, Integer>) actB.clone(); 
+		@SuppressWarnings("unchecked")
+		HashMap<String, Integer> pC = (HashMap<String, Integer>) actC.clone();
 		public void action() {
 			switch (step) {
 			case 0:
 				ACLMessage msg = myAgent.receive(mt);
-				String dayHour;
 				int increment;
-				String activity;
 				if(msg!=null) {
 					try {
 						Object[] content = (Object[]) msg.getContentObject();
 						dayHour = content[0].toString()+" "+content[1].toString();
 						activity = content[2].toString();
 						increment = (int) content[3];
+						if(activity.equalsIgnoreCase("A")) {
+							actA.put(dayHour, actA.get(dayHour) + increment);
+						} else if(activity.equalsIgnoreCase("B")) {
+							actB.put(dayHour, actB.get(dayHour) + increment);
+						} else {
+							actC.put(dayHour, actC.get(dayHour) + increment);
+						}
 						for(int i=0; i < serviceAgents.length; i++) {
 							ACLMessage mens = new ACLMessage(ACLMessage.REQUEST);
 							mens.addReceiver(serviceAgents[i]);
@@ -649,46 +665,211 @@ public class CustomerServiceSupervisor extends Agent{
 								mens.setContentObject(params);
 								myAgent.send(mens);
 							} catch (IOException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
 						}
 						step = 1;
+						repliesCnt = 0;
+						mt = MessageTemplate.or(MessageTemplate.and(MessageTemplate.MatchConversationId("change-activity")
+								, MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL)), MessageTemplate.and(MessageTemplate.MatchConversationId("change-activity")
+										, MessageTemplate.MatchPerformative(ACLMessage.REFUSE)));
 					} catch (UnreadableException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
 				break;
-				
+
 			case 1:
-				//Esperar por mensajes
-				block();
-			break;
-			
+
+				ACLMessage reply = myAgent.receive(mt);
+				if(reply != null) {
+					repliesCnt++;
+					if(reply.getPerformative() == ACLMessage.ACCEPT_PROPOSAL) {
+						Object[] params;
+						try {
+							params = (Object[]) reply.getContentObject();
+							agents.add(params);
+						} catch (UnreadableException e) {
+							e.printStackTrace();
+						}
+					}
+
+					if(repliesCnt >= 75) {
+						step = 2;
+					}
+				}else {
+					block();
+				}				
+				break;
+
 			case 2:
-				//Determinar los mejores con la ponderación
-				//Me voy a bestChromosome y hago el cambio
-			break;
-			
+				System.out.println("Tengo " + agents.size() + " propuestas.");
+				updateDemand(bestChromosomes.get(bestChromosomes.size() - 1).getTimesolts(), pA, pB, pC);
+				for(Object[] proposes: agents) {
+					int idAgent = Integer.parseInt(proposes[0].toString());
+					int numDay = Integer.parseInt(proposes[1].toString());
+					int franja = Integer.parseInt(proposes[2].toString());
+					String[][] sol = bestChromosomes.get(bestChromosomes.size() - 1).getTimesolts().get(idAgent - 1);
+
+					if(activity.equalsIgnoreCase("A")) {
+						if(actA.get(dayHour) < 0) {
+							System.out.println("El agente " + (idAgent) + " pude realizar el cambio porque esta ocioso");
+							System.out.println("Cambiaria de: " + sol[numDay][1]);
+							sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
+							System.out.println("A: " + sol[numDay][1]);
+							bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+						}
+
+					}else if(activity.equalsIgnoreCase("B")) {
+						if(actB.get(dayHour) < 0) {
+							System.out.println("El agente " + (idAgent) + " pude realizar el cambio porque esta ocioso");
+							System.out.println("Cambiaria de: " + sol[numDay][1]);
+							sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
+							System.out.println("A: " + sol[numDay][1]);
+							bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+						}
+
+					}else {
+						if(actB.get(dayHour) < 0) {
+							System.out.println("El agente " + (idAgent) + " pude realizar el cambio porque esta ocioso");
+							System.out.println("Cambiaria de: " + sol[numDay][1]);
+							sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
+							System.out.println("A: " + sol[numDay][1]);
+							bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+						}
+					}
+
+				}
+				bestChromosomes.get(bestChromosomes.size() - 1).calculateSchedulingFO(actA, actB, actC, breaks);
+				block();
+				break;
+
 			case 3:
 				//Efectuar cambios y calcular FO
-			break;
-			
+				break;
+
 			case 4: 
 				//Enviar nueva solución a Airline
-			break;
+				break;
 			default:
 				block();
 				break;
 			}
-			
+
 		}
 		@Override
 		public boolean done() {
-			// TODO Auto-generated method stub
+
 			return false;
 		}
-		
+
+		public void updateDemand(ArrayList<String[][]> timesolts, HashMap<String, Integer> a, HashMap<String, Integer> b, HashMap<String, Integer> c) {
+
+			for(String[][] actual: timesolts) {
+				for(int i = 0; i < 8; i++) {
+					String day = actual[i][0].split(" ")[0];
+					String initialHour = actual[i][0].split(" ")[1];
+					String activity = actual[i][1];
+					String initBreak = breaks.get(initialHour);
+					HashMap<String, String> labor = getTimeSlotsAgent(day, initialHour, activity, initBreak);
+					for(Map.Entry<String, String> entry: labor.entrySet()) {
+						String dayHour = entry.getKey();
+						String act = entry.getValue();
+						switch(act) {
+						case "A":
+							a.put(dayHour, a.get(dayHour) - 1);
+							break;
+						case "B":
+							b.put(dayHour, b.get(dayHour) - 1);
+							break;
+						case "C":
+							c.put(dayHour, c.get(dayHour) - 1);
+							break;
+						case "L":
+							break;
+						default:
+							break;
+						}
+					}
+				}
+			}
+
+		}
+
+		public HashMap<String, String> getTimeSlotsAgent(String day, String initialHour, String permutation, String initBreak) {
+
+
+			String nextDay = returnNextDay(day);
+			HashMap<String, String> labor = new HashMap<String, String>();
+			LocalTime init = LocalTime.of(Integer.parseInt(initialHour.split(":")[0]), Integer.parseInt(initialHour.split(":")[1]));
+			LocalTime pause = LocalTime.of(Integer.parseInt(initBreak.split(":")[0]),Integer.parseInt(initBreak.split(":")[1]));
+			String firstAct = Character.toString(permutation.charAt(0));
+			//Primeras dos horas se hacen la actividad 1
+			labor.put(day + " " + initialHour, firstAct);
+			LocalTime next = init.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), firstAct); else labor.put(nextDay + " " + next.toString(), firstAct); 
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), firstAct); else labor.put(nextDay + " " + next.toString(), firstAct); 
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), firstAct); else labor.put(nextDay + " " + next.toString(), firstAct); 
+			//Proximas dos horas y media se hace la actividad 2
+			String secAct = Character.toString(permutation.charAt(1));
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), secAct); else labor.put(nextDay + " " + next.toString(), secAct); 
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), secAct); else labor.put(nextDay + " " + next.toString(), secAct); 
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), secAct); else labor.put(nextDay + " " + next.toString(), secAct); 
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), secAct); else labor.put(nextDay + " " + next.toString(), secAct); 
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), secAct); else labor.put(nextDay + " " + next.toString(), secAct); 
+			//Proximas dos horas y media se hace la actividad 3
+			String thirdAct = Character.toString(permutation.charAt(2));
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), thirdAct); else labor.put(nextDay + " " + next.toString(), thirdAct); 
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), thirdAct); else labor.put(nextDay + " " + next.toString(), thirdAct); 
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), thirdAct); else labor.put(nextDay + " " + next.toString(), thirdAct); 
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), thirdAct); else labor.put(nextDay + " " + next.toString(), thirdAct); 
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), thirdAct); else labor.put(nextDay + " " + next.toString(), thirdAct); 
+			//Ultimas dos horas se hace la actividad 4
+			String fourthAct = Character.toString(permutation.charAt(3));
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), fourthAct); else labor.put(nextDay + " " + next.toString(), fourthAct); 
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), fourthAct); else labor.put(nextDay + " " + next.toString(), fourthAct); 
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), fourthAct); else labor.put(nextDay + " " + next.toString(), fourthAct); 
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), fourthAct); else labor.put(nextDay + " " + next.toString(), fourthAct); 
+
+			//Pausas
+			next = pause;
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), "L"); else labor.put(nextDay + " " + next.toString(), "L"); 
+			next = next.plusMinutes(30);
+			if(next.compareTo(init) > 0) labor.put(day + " " + next.toString(), "L"); else labor.put(nextDay + " " + next.toString(), "L"); 
+
+			return labor;
+
+		}
+
+		public String returnNextDay(String day) {
+
+			if(day.equalsIgnoreCase("Mar")) return "Mie";
+			if(day.equalsIgnoreCase("Mie")) return "Jue";
+			if(day.equalsIgnoreCase("Jue")) return "Vie";
+			if(day.equalsIgnoreCase("Vie")) return "Sab";
+			if(day.equalsIgnoreCase("Sab")) return "Dom";
+			if(day.equalsIgnoreCase("Dom")) return "Lun";
+			if(day.equalsIgnoreCase("Lun")) return "Mar2";
+			if(day.equalsIgnoreCase("Mar2")) return "Mie2";
+
+			return "";
+		}
+
 	}
 }

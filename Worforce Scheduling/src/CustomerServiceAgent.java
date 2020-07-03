@@ -3,8 +3,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.security.KeyStore.Entry;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -219,7 +217,7 @@ public class CustomerServiceAgent extends Agent{
 		}
 
 	} 
-	
+
 	private class asLeaderGoing extends CyclicBehaviour {
 
 		private static final long serialVersionUID = 1L;
@@ -234,7 +232,7 @@ public class CustomerServiceAgent extends Agent{
 			Object[] content;
 			String dayHour;
 			ArrayList<Integer> options;
-			
+
 			if(msg != null) {
 
 				try {
@@ -299,7 +297,7 @@ public class CustomerServiceAgent extends Agent{
 		}
 
 	}
-	
+
 	private class asLeaderReturn extends CyclicBehaviour {
 
 		private static final long serialVersionUID = 1L;
@@ -314,7 +312,7 @@ public class CustomerServiceAgent extends Agent{
 			Object[] content;
 			String dayHour;
 			ArrayList<Integer> options;
-			
+
 			if(msg != null) {
 
 				try {
@@ -423,11 +421,11 @@ public class CustomerServiceAgent extends Agent{
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
-//					for(Integer actual: vehicle) {
-//						System.out.print(actual + " - ");
-//					}
-//					System.out.println();
-//					System.out.println();
+					//					for(Integer actual: vehicle) {
+					//						System.out.print(actual + " - ");
+					//					}
+					//					System.out.println();
+					//					System.out.println();
 				}
 
 
@@ -473,7 +471,7 @@ public class CustomerServiceAgent extends Agent{
 
 		}
 	}
-	
+
 	private class ReceiveDecisionsReturn extends CyclicBehaviour {
 
 		private static final long serialVersionUID = 1L;
@@ -584,7 +582,7 @@ public class CustomerServiceAgent extends Agent{
 		}
 
 	}
-	
+
 	private class ReceiveExpectedProposesReturn extends CyclicBehaviour {
 
 		private static final long serialVersionUID = 1L;
@@ -695,7 +693,7 @@ public class CustomerServiceAgent extends Agent{
 
 		}
 	}
-	
+
 	private class ReceiveMessageFromLeadersReturn extends CyclicBehaviour {
 
 		private static final long serialVersionUID = 1L;
@@ -780,7 +778,7 @@ public class CustomerServiceAgent extends Agent{
 
 		}
 	}
-	
+
 	private class reciveSchedule extends CyclicBehaviour {
 
 		private static final long serialVersionUID = 1L;
@@ -789,7 +787,6 @@ public class CustomerServiceAgent extends Agent{
 
 		@Override
 		public void action() {
-			// TODO Auto-generated method stub
 			ACLMessage msg = myAgent.receive(mt);
 			if(msg!=null) {
 				try {
@@ -803,15 +800,14 @@ public class CustomerServiceAgent extends Agent{
 					}
 					mySchudule = generateSchedule(hour, position);
 				} catch (UnreadableException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}else {
 				block();
 			}
-			
+
 		}
-		
+
 	}
 	private String[][] generateSchedule(int hour, int position){
 		String[][] config = new String[8][2];
@@ -916,34 +912,69 @@ public class CustomerServiceAgent extends Agent{
 		@Override
 		public void action() {
 			ACLMessage msg = myAgent.receive(mt);
-			String dayHour;
-			char act;
-			int numDay;
 			if(msg!=null) {
 				try {
 					Object[] content = (Object[]) msg.getContentObject();
-					dayHour = content[0].toString();
-					act = content[1].toString().charAt(0);
+					String dayHour = content[0].toString();
+					char act = content[1].toString().charAt(0);
 					if(evaluateAbilty(act)) {
-						//Evaluar ese dia siempre y cuando este trabajando
-						numDay = getNumDay(dayHour);
-						if(working(dayHour, numDay,act)) {
-							//Determinar de cual a cual voy a cambiar
-							//Ponderacion
-							//Enviar Mensaje a supervisor
-							//Con la franja a cambiar y ponderación
+						int numDay = getNumDay(dayHour);
+						int franja = working(dayHour, numDay, act);
+						int before; //1. Si el slot es el del día, 0. Si el slot es el del día anterior
+						if(franja != -1) {
+							String slot;
+							char change;
+							int pond = 0;
+							if(franja < 4) {
+								before = numDay;
+								slot = mySchudule[numDay][1];
+								change = slot.charAt(franja);
+							}else {
+								slot = mySchudule[numDay - 1][1];
+								franja = franja - 4;
+								before = numDay - 1;
+								change = slot.charAt(franja);
+							}
+							if(change == 'A') {
+									pond = 10;
+							} else if(change == 'B') {
+								if(act == 'A') {
+									pond = 5;
+								} else if(act == 'C') {
+									pond = 2;
+								}
+							} else if(change == 'C') {
+								if(act == 'A') {
+									pond = 5;
+								} else if(act == 'B') {
+									pond = 2;
+								}
+							}
+							
+							ACLMessage reply = msg.createReply();
+							Object[] params = {name.split(" ")[1], before, franja, pond};
+							reply.setContentObject(params);
+							reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+							reply.setConversationId("change-activity");
+							myAgent.send(reply);
+						}else {
+							ACLMessage reply = msg.createReply();
+							reply.setPerformative(ACLMessage.REFUSE);
+							reply.setConversationId("change-activity");
+							myAgent.send(reply);
 						}
 					}
 				} catch (UnreadableException e) {
-					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
 					e.printStackTrace();
 				}
-				
+
 			}else {
 				block();
 			}
 		}
-		
+
 	}
 	private boolean evaluateAbilty(char act) {
 		if(act=='A') {
@@ -956,7 +987,7 @@ public class CustomerServiceAgent extends Agent{
 			return actC;
 		}
 		return true;
-		
+
 	}
 	private int getNumDay(String dayHour) {
 		String day = dayHour.split(" ")[0];
@@ -970,7 +1001,8 @@ public class CustomerServiceAgent extends Agent{
 		if(day.equalsIgnoreCase("Mar2")) return 7;
 		return -1;
 	}
-	private boolean working(String dayHour, int numDay, char act) {
+
+	private int working(String dayHour, int numDay, char act) {
 		String slot = mySchudule[numDay][1];
 		LocalTime hour = LocalTime.of(Integer.parseInt(mySchudule[numDay][0].split(" ")[1].split(":")[0]), Integer.parseInt(mySchudule[numDay][0].split(" ")[1].split(":")[1]));
 		LocalTime hourAna = LocalTime.of(Integer.parseInt(dayHour.split(" ")[1].split(":")[0]), Integer.parseInt(dayHour.split(" ")[1].split(":")[1]));
@@ -980,28 +1012,45 @@ public class CustomerServiceAgent extends Agent{
 		LocalTime endTurnPre = null;
 		if(!slot.contains("L")) {
 			if(hourAna.compareTo(endTurn)<0 && hourAna.compareTo(hour)>0) {
-				if((hour.equals(hourAna) && slot.charAt(0)!=act)||(hour.plusMinutes(120).equals(hourAna)&& slot.charAt(1)!=act)||
-						(hour.plusMinutes(120+150).equals(hourAna)&&slot.charAt(2)!=act)||(hour.plusMinutes(120+150+150).equals(hourAna)&&slot.charAt(3)!=act)) {
-					System.out.println("Pega con mi cambio de franjita "+name);
-					return true;
+				if(hour.equals(hourAna) && slot.charAt(0)!=act) {
+					System.out.println(name + " puede atender el pico cambiando la franja 1");
+					return 0;
+				}else if(hour.plusMinutes(120).equals(hourAna)&& slot.charAt(1)!=act) {
+					System.out.println(name + " puede atender el pico cambiando la franja 2");
+					return 1;
+				}else if(hour.plusMinutes(120+150).equals(hourAna)&&slot.charAt(2)!=act) {
+					System.out.println(name + " puede atender el pico cambiando la franja 3");
+					return 2;
+				}else if(hour.plusMinutes(120+150+150).equals(hourAna)&&slot.charAt(3)!=act) {
+					System.out.println(name + " puede atender el pico cambiando la franja 4");
+					return 3;
 				}
 			}
-			
-			if(numDay-1>0) {
-				slotPre = mySchudule[numDay-1][1];
-				if(!slotPre.contains("L")) {
-					hourPre = LocalTime.of(Integer.parseInt(mySchudule[numDay-1][0].split(" ")[1].split(":")[0]), Integer.parseInt(mySchudule[numDay-1][0].split(" ")[1].split(":")[1]));
-					endTurnPre = hourPre.plusHours(9);
-					if(hourAna.compareTo(endTurnPre)<0 && ChronoUnit.HOURS.between(hourAna, endTurnPre)<=9) {
-						if((hourPre.equals(hourAna) && slotPre.charAt(0)!=act)||(hourPre.plusMinutes(120).equals(hourAna)&& slotPre.charAt(1)!=act)||
-								(hourPre.plusMinutes(120+150).equals(hourAna)&&slotPre.charAt(2)!=act)||(hourPre.plusMinutes(120+150+150).equals(hourAna)&&slotPre.charAt(3)!=act)) {
-							System.out.println("Pega con mi cambio de franjita "+name);
-							return true;
-						}
+		}
+
+		if(numDay - 1 > 0) {
+			slotPre = mySchudule[numDay - 1][1];
+			if(!slotPre.contains("L")) {
+				hourPre = LocalTime.of(Integer.parseInt(mySchudule[numDay-1][0].split(" ")[1].split(":")[0]), Integer.parseInt(mySchudule[numDay-1][0].split(" ")[1].split(":")[1]));
+				endTurnPre = hourPre.plusHours(9);
+				if(hourAna.compareTo(endTurnPre)<0 && ChronoUnit.HOURS.between(hourAna, endTurnPre)<=9) {
+					if(hourPre.equals(hourAna) && slotPre.charAt(0)!=act) {
+						System.out.println(name + " puede atender el pico cambiando la franja 1");
+						return 4;
+					}else if(hourPre.plusMinutes(120).equals(hourAna)&& slotPre.charAt(1)!=act) {
+						System.out.println(name + " puede atender el pico cambiando la franja 2");
+						return 5;
+					}else if(hourPre.plusMinutes(120+150).equals(hourAna)&&slotPre.charAt(2)!=act) {
+						System.out.println(name + " puede atender el pico cambiando la franja 3");
+						return 6;
+					}else if(hourPre.plusMinutes(120+150+150).equals(hourAna)&&slotPre.charAt(3)!=act) {
+						System.out.println(name + " puede atender el pico cambiando la franja 4");
+						return 7;
 					}
 				}
 			}
 		}
-		return false;
+		System.out.println(name + " no puede atender el pico");
+		return -1;
 	}
 }
