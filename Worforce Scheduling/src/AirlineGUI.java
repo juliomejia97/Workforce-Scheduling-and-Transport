@@ -60,7 +60,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		myAgent = a;
 		menu = new JFrame();
 		menu.getContentPane().setBackground(Color.WHITE);
-		menu.setSize(700, 690);
+		menu.setSize(700, 700);
 		menu.setTitle("Airline Scheduling System");
 		menu.getContentPane().setLayout(new BorderLayout());
 		menu.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

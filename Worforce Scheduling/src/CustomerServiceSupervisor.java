@@ -123,6 +123,7 @@ public class CustomerServiceSupervisor extends Agent{
 		} catch (IOException e) {
 			System.out.println("IOException: " + e.getMessage());
 		}
+		addBehaviour(new resolvePeak());
 	}
 
 	public int getPopulation() {
@@ -619,5 +620,63 @@ public class CustomerServiceSupervisor extends Agent{
 		}
 		return swap;
 	}
+	
+	private class resolvePeak extends Behaviour{
 
+		private static final long serialVersionUID = 1L;
+		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("peak-demand"),
+				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
+		int step = 0;
+		public void action() {
+			switch (step) {
+			case 0:
+				ACLMessage msg = myAgent.receive(mt);
+				String dayHour;
+				int increment;
+				String activity;
+				if(msg!=null) {
+					try {
+						Object[] content = (Object[]) msg.getContentObject();
+						dayHour = content[0].toString()+" "+content[1].toString();
+						activity = content[2].toString();
+						increment = (int) content[3];
+						for(int i=0; i < serviceAgents.length; i++) {
+							ACLMessage mens = new ACLMessage(ACLMessage.REQUEST);
+							mens.addReceiver(serviceAgents[i]);
+							mens.setConversationId("change-activity");
+							try {
+								Object[] params = {dayHour, activity};
+								mens.setContentObject(params);
+								myAgent.send(mens);
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+						step = 1;
+					} catch (UnreadableException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				break;
+				
+			case 1:
+				System.out.println("Esperare mis mensajitos");
+				block();
+			break;
+
+			default:
+				block();
+				break;
+			}
+			
+		}
+		@Override
+		public boolean done() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+		
+	}
 }

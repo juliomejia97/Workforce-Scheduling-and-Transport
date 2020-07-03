@@ -4,6 +4,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.security.KeyStore.Entry;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +34,7 @@ public class CustomerServiceAgent extends Agent{
 	private boolean actB;
 	private boolean actC;
 	private String[][] mySchudule;
+	private double assing;
 	private HashMap<String, Boolean> days = new HashMap<String, Boolean>();
 	private HashMap<String, Integer> expectedProposesGoing = new HashMap<String, Integer>();
 	private HashMap<String, Integer> expectedRepliesGoing = new HashMap<String, Integer>();
@@ -124,7 +128,7 @@ public class CustomerServiceAgent extends Agent{
 		addBehaviour(new ReceiveDecisionsGoing());
 		addBehaviour(new ReceiveDecisionsReturn());
 		addBehaviour(new reciveSchedule());
-
+		addBehaviour(new postChange());
 	}
 
 	public double getCoorX() {
@@ -173,7 +177,8 @@ public class CustomerServiceAgent extends Agent{
 	private class TimeSlotConfiguration extends CyclicBehaviour {
 
 		private static final long serialVersionUID = 1L;
-		MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
+		MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("report-option"),
+				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
 
 		public void action() {
 			ACLMessage msg = myAgent.receive(mt);
@@ -789,6 +794,7 @@ public class CustomerServiceAgent extends Agent{
 			if(msg!=null) {
 				try {
 					Double info = (Double) msg.getContentObject();
+					assing = info;
 					double permutation = info%1;
 					int hour = (int) (info - permutation);
 					int position = (int) Math.round(permutation*opcions.size());
@@ -901,5 +907,98 @@ public class CustomerServiceAgent extends Agent{
 		}
 
 		return select;
+	}
+	private class postChange extends CyclicBehaviour{
+
+		private static final long serialVersionUID = 1L;
+		private MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("change-activity"),
+				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
+		@Override
+		public void action() {
+			ACLMessage msg = myAgent.receive(mt);
+			String dayHour;
+			char act;
+			int numDay;
+			if(msg!=null) {
+				try {
+					Object[] content = (Object[]) msg.getContentObject();
+					dayHour = content[0].toString();
+					act = content[1].toString().charAt(0);
+					if(evaluateAbilty(act)) {
+						//Evaluar ese dia siempre y cuando este trabajando
+						numDay = getNumDay(dayHour);
+						if(working(dayHour, numDay,act)) {
+							
+						}
+					}
+				} catch (UnreadableException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+			}else {
+				block();
+			}
+		}
+		
+	}
+	private boolean evaluateAbilty(char act) {
+		if(act=='A') {
+			return actA;
+		}
+		if(act=='B') {
+			return actB;
+		}
+		if(act=='C') {
+			return actC;
+		}
+		return true;
+		
+	}
+	private int getNumDay(String dayHour) {
+		String day = dayHour.split(" ")[0];
+		if(day.equalsIgnoreCase("Mar")) return 0;
+		if(day.equalsIgnoreCase("Mie")) return 1;
+		if(day.equalsIgnoreCase("Jue")) return 2;
+		if(day.equalsIgnoreCase("Vie")) return 3;
+		if(day.equalsIgnoreCase("Sab")) return 4;
+		if(day.equalsIgnoreCase("Dom")) return 5;
+		if(day.equalsIgnoreCase("Lun")) return 6;
+		if(day.equalsIgnoreCase("Mar2")) return 7;
+		return -1;
+	}
+	private boolean working(String dayHour, int numDay, char act) {
+		String slot = mySchudule[numDay][1];
+		LocalTime hour = LocalTime.of(Integer.parseInt(mySchudule[numDay][0].split(" ")[1].split(":")[0]), Integer.parseInt(mySchudule[numDay][0].split(" ")[1].split(":")[1]));
+		LocalTime hourAna = LocalTime.of(Integer.parseInt(dayHour.split(" ")[1].split(":")[0]), Integer.parseInt(dayHour.split(" ")[1].split(":")[1]));
+		LocalTime endTurn = hour.plusHours(9);
+		String slotPre;
+		LocalTime hourPre = null;
+		LocalTime endTurnPre = null;
+		if(!slot.contains("L")) {
+			if(hourAna.compareTo(endTurn)<0 && hourAna.compareTo(hour)>0) {
+				if((hour.equals(hourAna) && slot.charAt(0)!=act)||(hour.plusMinutes(120).equals(hourAna)&& slot.charAt(1)!=act)||
+						(hour.plusMinutes(120+150).equals(hourAna)&&slot.charAt(2)!=act)||(hour.plusMinutes(120+150+150).equals(hourAna)&&slot.charAt(3)!=act)) {
+					System.out.println("Pega con mi cambio de franjita "+name);
+					return true;
+				}
+			}
+			
+			if(numDay-1>0) {
+				slotPre = mySchudule[numDay-1][1];
+				if(!slotPre.contains("L")) {
+					hourPre = LocalTime.of(Integer.parseInt(mySchudule[numDay-1][0].split(" ")[1].split(":")[0]), Integer.parseInt(mySchudule[numDay-1][0].split(" ")[1].split(":")[1]));
+					endTurnPre = hourPre.plusHours(9);
+					if(hourAna.compareTo(endTurnPre)<0 && ChronoUnit.HOURS.between(hourAna, endTurnPre)<=9) {
+						if((hourPre.equals(hourAna) && slotPre.charAt(0)!=act)||(hourPre.plusMinutes(120).equals(hourAna)&& slotPre.charAt(1)!=act)||
+								(hourPre.plusMinutes(120+150).equals(hourAna)&&slotPre.charAt(2)!=act)||(hourPre.plusMinutes(120+150+150).equals(hourAna)&&slotPre.charAt(3)!=act)) {
+							System.out.println("Pega con mi cambio de franjita "+name);
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return false;
 	}
 }
