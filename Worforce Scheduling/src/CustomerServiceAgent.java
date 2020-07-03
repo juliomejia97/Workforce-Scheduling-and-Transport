@@ -928,7 +928,10 @@ public class CustomerServiceAgent extends Agent{
 						//Evaluar ese dia siempre y cuando este trabajando
 						numDay = getNumDay(dayHour);
 						if(working(dayHour, numDay,act)) {
-							
+							//Determinar de cual a cual voy a cambiar
+							//Ponderacion
+							//Enviar Mensaje a supervisor
+							//Con la franja a cambiar y ponderación
 						}
 					}
 				} catch (UnreadableException e) {

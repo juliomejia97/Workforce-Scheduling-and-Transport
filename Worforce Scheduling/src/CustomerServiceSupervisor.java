@@ -662,10 +662,22 @@ public class CustomerServiceSupervisor extends Agent{
 				break;
 				
 			case 1:
-				System.out.println("Esperare mis mensajitos");
+				//Esperar por mensajes
 				block();
 			break;
-
+			
+			case 2:
+				//Determinar los mejores con la ponderación
+				//Me voy a bestChromosome y hago el cambio
+			break;
+			
+			case 3:
+				//Efectuar cambios y calcular FO
+			break;
+			
+			case 4: 
+				//Enviar nueva solución a Airline
+			break;
 			default:
 				block();
 				break;
