@@ -32,7 +32,6 @@ public class CustomerServiceAgent extends Agent{
 	private boolean actB;
 	private boolean actC;
 	private String[][] mySchudule;
-	private double assing;
 	private HashMap<String, Boolean> days = new HashMap<String, Boolean>();
 	private HashMap<String, Integer> expectedProposesGoing = new HashMap<String, Integer>();
 	private HashMap<String, Integer> expectedRepliesGoing = new HashMap<String, Integer>();
@@ -791,7 +790,6 @@ public class CustomerServiceAgent extends Agent{
 			if(msg!=null) {
 				try {
 					Double info = (Double) msg.getContentObject();
-					assing = info;
 					double permutation = info%1;
 					int hour = (int) (info - permutation);
 					int position = (int) Math.round(permutation*opcions.size());

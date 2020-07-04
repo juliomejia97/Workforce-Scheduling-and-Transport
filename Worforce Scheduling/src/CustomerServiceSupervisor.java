@@ -711,45 +711,130 @@ public class CustomerServiceSupervisor extends Agent{
 					int franja = Integer.parseInt(proposes[2].toString());
 					String[][] sol = bestChromosomes.get(bestChromosomes.size() - 1).getTimesolts().get(idAgent - 1);
 
-					if(activity.equalsIgnoreCase("A")) {
+					if(sol[numDay][1].charAt(franja) == 'A') {
 						if(actA.get(dayHour) < 0) {
-							System.out.println("El agente " + (idAgent) + " pude realizar el cambio porque esta ocioso");
+							System.out.println("El agente " + (idAgent) + " pudo realizar el cambio porque esta ocioso");
 							System.out.println("Cambiaria de: " + sol[numDay][1]);
 							sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
 							System.out.println("A: " + sol[numDay][1]);
 							bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+						}else {
+							System.out.println("El agente " + (idAgent) + " no puede realizar el cambio porque no esta ocioso");
+							int demActual = obtainDemand("" + sol[numDay][1].charAt(franja), dayHour);
+							int demChange = obtainDemand(activity, dayHour);
+							System.out.println("Verificando insatisfacción de demandas");
+							if(demActual < demChange) {
+								System.out.println("El agente " + (idAgent) +  " esta cambiando de demanda ya que la otra esta más critica");
+								System.out.println("Cambiaria de: " + sol[numDay][1]);
+								sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
+								System.out.println("A: " + sol[numDay][1]);
+								bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+							}else if(demActual >= demChange){
+								if(randDemand()) {
+									System.out.println("El agente " + (idAgent) +  " esta cambiando de demanda por el aleatorio");
+									System.out.println("Cambiaria de: " + sol[numDay][1]);
+									sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
+									System.out.println("A: " + sol[numDay][1]);
+									bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+								}else {
+									System.out.println("El agente " + (idAgent) + " no cambiará del todo para no afectar la FO de MaxDemand.");
+								}
+							}
 						}
 
-					}else if(activity.equalsIgnoreCase("B")) {
+					}else if(sol[numDay][1].charAt(franja) == 'B') {
 						if(actB.get(dayHour) < 0) {
-							System.out.println("El agente " + (idAgent) + " pude realizar el cambio porque esta ocioso");
+							System.out.println("El agente " + (idAgent) + " pudo realizar el cambio porque esta ocioso");
 							System.out.println("Cambiaria de: " + sol[numDay][1]);
 							sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
 							System.out.println("A: " + sol[numDay][1]);
 							bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+						}else {
+							System.out.println("El agente " + (idAgent) + " no puede realizar el cambio porque no esta ocioso");
+							int demActual = obtainDemand("" + sol[numDay][1].charAt(franja), dayHour);
+							int demChange = obtainDemand(activity, dayHour);
+							System.out.println("Verificando insatisfacción de demandas");
+							if(demActual < demChange) {
+								System.out.println("El agente " + (idAgent) +  " esta cambiando de demanda ya que la otra esta más critica");
+								System.out.println("Cambiaria de: " + sol[numDay][1]);
+								sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
+								System.out.println("A: " + sol[numDay][1]);
+								bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+							}else if(demActual >= demChange){
+								if(randDemand()) {
+									System.out.println("El agente " + (idAgent) +  " esta cambiando de demanda por el aleatorio");
+									System.out.println("Cambiaria de: " + sol[numDay][1]);
+									sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
+									System.out.println("A: " + sol[numDay][1]);
+									bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+								}else {
+									System.out.println("El agente " + (idAgent) + " no cambiará del todo para no afectar la FO de MaxDemand.");
+								}
+							}
 						}
 
 					}else {
-						if(actB.get(dayHour) < 0) {
-							System.out.println("El agente " + (idAgent) + " pude realizar el cambio porque esta ocioso");
+						if(actC.get(dayHour) < 0) {
+							System.out.println("El agente " + (idAgent) + " pudo realizar el cambio porque esta ocioso");
 							System.out.println("Cambiaria de: " + sol[numDay][1]);
 							sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
 							System.out.println("A: " + sol[numDay][1]);
 							bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+						}else {
+							System.out.println("El agente " + (idAgent) + " no puede realizar el cambio porque no esta ocioso");
+							int demActual = obtainDemand("" + sol[numDay][1].charAt(franja), dayHour);
+							int demChange = obtainDemand(activity, dayHour);
+							System.out.println("Verificando insatisfacción de demandas");
+							if(demActual < demChange) {
+								System.out.println("El agente " + (idAgent) +  " esta cambiando de demanda ya que la otra esta más critica");
+								System.out.println("Cambiaria de: " + sol[numDay][1]);
+								sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
+								System.out.println("A: " + sol[numDay][1]);
+								bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+							}else if(demActual >= demChange) {
+								if(randDemand()) {
+									System.out.println("El agente " + (idAgent) +  " esta cambiando de demanda por el aleatorio");
+									System.out.println("Cambiaria de: " + sol[numDay][1]);
+									sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
+									System.out.println("A: " + sol[numDay][1]);
+									bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+								}else {
+									System.out.println("El agente " + (idAgent) + " no cambiará del todo para no afectar la FO de MaxDemand.");
+								}
+							}
 						}
 					}
-
 				}
-				bestChromosomes.get(bestChromosomes.size() - 1).calculateSchedulingFO(actA, actB, actC, breaks);
-				block();
+				step = 3;
 				break;
 
 			case 3:
-				//Efectuar cambios y calcular FO
+				bestChromosomes.get(bestChromosomes.size() - 1).calculateSchedulingFO(actA, actB, actC, breaks);
+				step = 4;
 				break;
 
 			case 4: 
-				//Enviar nueva solución a Airline
+				ArrayList<String[][]> timeslots;
+				double bestFo;
+				double max;
+				double unatended;
+				ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
+				cfp.addReceiver(airline[0]);
+				cfp.setConversationId("peak-demand-result");
+				timeslots= bestChromosomes.get(bestChromosomes.size() - 1).getTimesolts();
+				bestFo = bestChromosomes.get(bestChromosomes.size() - 1).getFO();
+				max = bestChromosomes.get(bestChromosomes.size() - 1).getMaxDemand();
+				unatended = bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandA() +
+						bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandB() + 
+						bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandC();
+				Object[] params = {timeslots,bestFo, max, unatended};
+				try {
+					cfp.setContentObject(params);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				myAgent.send(cfp);
+				step = 5;
 				break;
 			default:
 				block();
@@ -759,8 +844,24 @@ public class CustomerServiceSupervisor extends Agent{
 		}
 		@Override
 		public boolean done() {
-
-			return false;
+			return (step == 5);
+		}
+		
+		public int obtainDemand(String act, String dayHour) {
+			
+			if(act.equalsIgnoreCase("A")) {
+				return pA.get(dayHour);
+			}else if(act.equalsIgnoreCase("B")) {
+				return pB.get(dayHour);
+			}else {
+				return pC.get(dayHour);
+			}
+			
+		}
+		
+		public boolean randDemand() {
+			Random rd = new Random();
+		    return rd.nextBoolean(); 
 		}
 
 		public void updateDemand(ArrayList<String[][]> timesolts, HashMap<String, Integer> a, HashMap<String, Integer> b, HashMap<String, Integer> c) {

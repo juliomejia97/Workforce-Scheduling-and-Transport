@@ -30,6 +30,8 @@ public class Airline extends Agent{
 	private double schedulingFO;
 	private double maxDemand;
 	private double unatendedDemand;
+	private double wellnessFO;
+	private double nRoutes;
 	@Override
 	protected void setup() {
 
@@ -82,6 +84,7 @@ public class Airline extends Agent{
 		myInterface = new AirlineGUI(this, new ArrayList<String[][]>(), 0, 0, 0, 0, 0);
 		addBehaviour(new bestSchedule());
 		addBehaviour(new resultRouting());
+		addBehaviour(new peakDemandResult());
 	}
 	
 	public AirlineGUI getMyInterface() {
@@ -113,6 +116,37 @@ public class Airline extends Agent{
 			}
 		});
 	}
+	
+	private class peakDemandResult extends CyclicBehaviour{
+		
+		private static final long serialVersionUID = 1L;
+		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("peak-demand-result"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+		
+		@SuppressWarnings("unchecked")
+		@Override
+		public void action() {
+			ACLMessage msg = myAgent.receive(mt);
+			Object[] args;
+			ArrayList<String[][]> schedule = null;
+			if(msg!=null) {
+				try {
+					args =  (Object[]) msg.getContentObject();
+					schedule = (ArrayList<String[][]>) args[0];
+					timeslots = schedule;
+					schedulingFO = (Double) args[1];
+					maxDemand = (Double) args[2];
+					unatendedDemand = (Double) args[3];
+					myInterface.displayFO(timeslots, schedulingFO, wellnessFO, nRoutes, maxDemand, unatendedDemand);
+				} catch (UnreadableException e) {
+					e.printStackTrace();
+				}
+			}else {
+				block();
+			}
+		}
+	}
+	
 	private class bestSchedule extends CyclicBehaviour {
 		
 		private static final long serialVersionUID = 1L;
@@ -187,8 +221,8 @@ public class Airline extends Agent{
 			if(msg!=null) {
 				try {
 					Object[] params = (Object[]) msg.getContentObject();
-					double wellnessFO = (double) params[0];
-					double nRoutes = (double) params[1];
+					wellnessFO = (double) params[0];
+					nRoutes = (double) params[1];
 					myInterface.displayFO(timeslots, schedulingFO, wellnessFO, nRoutes, maxDemand, unatendedDemand);
 				} catch (UnreadableException e) {
 					e.printStackTrace();

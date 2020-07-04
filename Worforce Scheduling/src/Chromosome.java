@@ -54,6 +54,10 @@ public class Chromosome implements Serializable{
 		@SuppressWarnings("unchecked")
 		HashMap<String, Integer> max = (HashMap<String, Integer>) pA.clone();
 		double maxValue = 0;
+		
+		this.unatendedDemandA = 0;
+		this.unatendedDemandB = 0;
+		this.unatendedDemandC = 0;
 
 		for(String[][] actual: timesolts) {
 			for(int i = 0; i < 8; i++) {

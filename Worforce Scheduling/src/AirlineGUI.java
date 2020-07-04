@@ -210,7 +210,13 @@ public class AirlineGUI extends JPanel implements WindowListener{
 				myAgent.peakDemand(day.getSelectedItem().toString(), hour.getSelectedItem().toString(), act.getSelectedItem().toString(), Integer.parseInt(increment.getText()));
 			}
 		});
-
+		
+		barraArrastre = new JScrollPane();
+		barraArrastre.setBounds(18, 320, 650, 270);
+		tblAgentes = new JTable();
+		barraArrastre.setViewportView(tblAgentes);
+		add(barraArrastre);
+		
 		menu.getContentPane().add(this);
 		menu.setResizable(false);
 		menu.setVisible(true);
@@ -256,8 +262,12 @@ public class AirlineGUI extends JPanel implements WindowListener{
 	public void displayFO(ArrayList<String[][]> timeslots, double schedulingFO, double wellnessFO, double nRoutes,
 			double maxDemand, double unatendedDemand) {
 
+		long totalFO = 0;
+		tblAgentes.removeAll();
+		tblAgentes.repaint();
+
 		DecimalFormat df = new DecimalFormat("#.##");
-		long totalFO =  (long) ((schedulingFO + wellnessFO) * 10000 + nRoutes);
+		totalFO = (long) ((schedulingFO + wellnessFO) * 10000 + nRoutes);
 		txtFuncionObjetivo.setEditable(true);
 		txtFuncionObjetivo.setText("" + df.format(totalFO));
 		txtFuncionObjetivo.setEditable(false);
@@ -304,17 +314,12 @@ public class AirlineGUI extends JPanel implements WindowListener{
 			agentData.add(view);
 		}
 
-		barraArrastre = new JScrollPane();
-		barraArrastre.setBounds(18, 320, 650, 270);
-		add(barraArrastre);
-		tblAgentes = new JTable();
-		barraArrastre.setViewportView(tblAgentes);
 		model = new DefaultTableModel();
 		model.setColumnIdentifiers(header);
 		for(List<String> actual:agentData) {
 			model.addRow((Vector<?>) actual);
 		}
-		tblAgentes.setModel(model);
+		tblAgentes.setModel(model);		
 
 	}
 
