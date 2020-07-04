@@ -1011,16 +1011,16 @@ public class CustomerServiceAgent extends Agent{
 		if(!slot.contains("L")) {
 			if(hourAna.compareTo(endTurn)<0 && hourAna.compareTo(hour)>0) {
 				if(hour.equals(hourAna) && slot.charAt(0)!=act) {
-					System.out.println(name + " puede atender el pico cambiando la franja 1");
+					System.out.println(name + " can attend the unexpected peak of demand by changing the first slot.");
 					return 0;
 				}else if(hour.plusMinutes(120).equals(hourAna)&& slot.charAt(1)!=act) {
-					System.out.println(name + " puede atender el pico cambiando la franja 2");
+					System.out.println(name + " can attend the unexpected peak of demand by changing the second slot.");
 					return 1;
 				}else if(hour.plusMinutes(120+150).equals(hourAna)&&slot.charAt(2)!=act) {
-					System.out.println(name + " puede atender el pico cambiando la franja 3");
+					System.out.println(name + " can attend the unexpected peak of demand by changing the third slot.");
 					return 2;
 				}else if(hour.plusMinutes(120+150+150).equals(hourAna)&&slot.charAt(3)!=act) {
-					System.out.println(name + " puede atender el pico cambiando la franja 4");
+					System.out.println(name + " can attend the unexpected peak of demand by changing the fourth slot.");
 					return 3;
 				}
 			}
@@ -1033,22 +1033,22 @@ public class CustomerServiceAgent extends Agent{
 				endTurnPre = hourPre.plusHours(9);
 				if(hourAna.compareTo(endTurnPre)<0 && ChronoUnit.HOURS.between(hourAna, endTurnPre)<=9) {
 					if(hourPre.equals(hourAna) && slotPre.charAt(0)!=act) {
-						System.out.println(name + " puede atender el pico cambiando la franja 1");
+						System.out.println(name + " can attend the unexpected peak of demand by changing the first slot of the previous shift.");
 						return 4;
 					}else if(hourPre.plusMinutes(120).equals(hourAna)&& slotPre.charAt(1)!=act) {
-						System.out.println(name + " puede atender el pico cambiando la franja 2");
+						System.out.println(name + " can attend the unexpected peak of demand by changing the second slot of the previous shift.");
 						return 5;
 					}else if(hourPre.plusMinutes(120+150).equals(hourAna)&&slotPre.charAt(2)!=act) {
-						System.out.println(name + " puede atender el pico cambiando la franja 3");
+						System.out.println(name + " can attend the unexpected peak of demand by changing the third slot of the previous shift.");
 						return 6;
 					}else if(hourPre.plusMinutes(120+150+150).equals(hourAna)&&slotPre.charAt(3)!=act) {
-						System.out.println(name + " puede atender el pico cambiando la franja 4");
+						System.out.println(name + " can attend the unexpected peak of demand by changing the fourth slot of the previous shift.");
 						return 7;
 					}
 				}
 			}
 		}
-		System.out.println(name + " no puede atender el pico");
+		System.out.println(name + " can't attend the unexpected peak of demand.");
 		return -1;
 	}
 }

@@ -703,7 +703,7 @@ public class CustomerServiceSupervisor extends Agent{
 				break;
 
 			case 2:
-				System.out.println("Tengo " + agents.size() + " propuestas.");
+				System.out.println("The supervisor has " + agents.size() + " proposes.");
 				updateDemand(bestChromosomes.get(bestChromosomes.size() - 1).getTimesolts(), pA, pB, pC);
 				for(Object[] proposes: agents) {
 					int idAgent = Integer.parseInt(proposes[0].toString());
@@ -712,94 +712,103 @@ public class CustomerServiceSupervisor extends Agent{
 					String[][] sol = bestChromosomes.get(bestChromosomes.size() - 1).getTimesolts().get(idAgent - 1);
 
 					if(sol[numDay][1].charAt(franja) == 'A') {
-						if(actA.get(dayHour) < 0) {
-							System.out.println("El agente " + (idAgent) + " pudo realizar el cambio porque esta ocioso");
-							System.out.println("Cambiaria de: " + sol[numDay][1]);
+						if(pA.get(dayHour) < 0) {
+							System.out.println("The agent " + (idAgent) + " can make the change because he is idle.");
+							System.out.println("The change is from permutation: " + sol[numDay][1]);
 							sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
-							System.out.println("A: " + sol[numDay][1]);
+							System.out.println("To permutation: " + sol[numDay][1]);
 							bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+							pA.put(dayHour, pA.get(dayHour) - 1);
 						}else {
-							System.out.println("El agente " + (idAgent) + " no puede realizar el cambio porque no esta ocioso");
+							System.out.println("The agent " + (idAgent) + " can't make the change because he is not idle.");
 							int demActual = obtainDemand("" + sol[numDay][1].charAt(franja), dayHour);
 							int demChange = obtainDemand(activity, dayHour);
-							System.out.println("Verificando insatisfacción de demandas");
+							System.out.println("Verifying demand insatisfaction...");
 							if(demActual < demChange) {
-								System.out.println("El agente " + (idAgent) +  " esta cambiando de demanda ya que la otra esta más critica");
-								System.out.println("Cambiaria de: " + sol[numDay][1]);
+								System.out.println("The agent " + (idAgent) +  " is changing activities because the other is more critic.");
+								System.out.println("The change is from permutation: " + sol[numDay][1]);
 								sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
-								System.out.println("A: " + sol[numDay][1]);
+								System.out.println("To permutation: " + sol[numDay][1]);
 								bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+								pA.put(dayHour, pA.get(dayHour) - 1);
 							}else if(demActual >= demChange){
 								if(randDemand()) {
-									System.out.println("El agente " + (idAgent) +  " esta cambiando de demanda por el aleatorio");
-									System.out.println("Cambiaria de: " + sol[numDay][1]);
+									System.out.println("The agent " + (idAgent) +  " is changing activities because of the random.");
+									System.out.println("The change is from permutation: " + sol[numDay][1]);
 									sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
-									System.out.println("A: " + sol[numDay][1]);
+									System.out.println("To permutation: " + sol[numDay][1]);
 									bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+									pA.put(dayHour, pA.get(dayHour) - 1);
 								}else {
-									System.out.println("El agente " + (idAgent) + " no cambiará del todo para no afectar la FO de MaxDemand.");
+									System.out.println("The agent " + (idAgent) + " will not change activities so it dones't affect the maxDemand OF.");
 								}
 							}
 						}
 
 					}else if(sol[numDay][1].charAt(franja) == 'B') {
-						if(actB.get(dayHour) < 0) {
-							System.out.println("El agente " + (idAgent) + " pudo realizar el cambio porque esta ocioso");
-							System.out.println("Cambiaria de: " + sol[numDay][1]);
+						if(pB.get(dayHour) < 0) {
+							System.out.println("The agent " + (idAgent) + " can make the change because he is idle.");
+							System.out.println("The change is from permutation: " + sol[numDay][1]);
 							sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
-							System.out.println("A: " + sol[numDay][1]);
+							System.out.println("To permutation: " + sol[numDay][1]);
 							bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+							pB.put(dayHour, pB.get(dayHour) - 1);
 						}else {
-							System.out.println("El agente " + (idAgent) + " no puede realizar el cambio porque no esta ocioso");
+							System.out.println("The agent " + (idAgent) + " can't make the change because he is not idle.");
 							int demActual = obtainDemand("" + sol[numDay][1].charAt(franja), dayHour);
 							int demChange = obtainDemand(activity, dayHour);
-							System.out.println("Verificando insatisfacción de demandas");
+							System.out.println("Verifying demand insatisfaction...");
 							if(demActual < demChange) {
-								System.out.println("El agente " + (idAgent) +  " esta cambiando de demanda ya que la otra esta más critica");
-								System.out.println("Cambiaria de: " + sol[numDay][1]);
+								System.out.println("The agent " + (idAgent) +  " is changing activities because the other is more critic.");
+								System.out.println("The change is from permutation: " + sol[numDay][1]);
 								sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
-								System.out.println("A: " + sol[numDay][1]);
+								System.out.println("To permutation: " + sol[numDay][1]);
 								bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+								pB.put(dayHour, pB.get(dayHour) - 1);
 							}else if(demActual >= demChange){
 								if(randDemand()) {
-									System.out.println("El agente " + (idAgent) +  " esta cambiando de demanda por el aleatorio");
-									System.out.println("Cambiaria de: " + sol[numDay][1]);
+									System.out.println("The agent " + (idAgent) +  " is changing activities because of the random.");
+									System.out.println("The change is from permutation: " + sol[numDay][1]);
 									sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
-									System.out.println("A: " + sol[numDay][1]);
+									System.out.println("To permutation: " + sol[numDay][1]);
 									bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+									pB.put(dayHour, pB.get(dayHour) - 1);
 								}else {
-									System.out.println("El agente " + (idAgent) + " no cambiará del todo para no afectar la FO de MaxDemand.");
+									System.out.println("The agent " + (idAgent) + " will not change activities so it dones't affect the maxDemand OF.");
 								}
 							}
 						}
 
 					}else {
-						if(actC.get(dayHour) < 0) {
-							System.out.println("El agente " + (idAgent) + " pudo realizar el cambio porque esta ocioso");
-							System.out.println("Cambiaria de: " + sol[numDay][1]);
+						if(pC.get(dayHour) < 0) {
+							System.out.println("The agent " + (idAgent) + " can make the change because he is idle.");
+							System.out.println("The change is from permutation: " + sol[numDay][1]);
 							sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
-							System.out.println("A: " + sol[numDay][1]);
+							System.out.println("To permutation: " + sol[numDay][1]);
 							bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+							pC.put(dayHour, pC.get(dayHour) - 1);
 						}else {
-							System.out.println("El agente " + (idAgent) + " no puede realizar el cambio porque no esta ocioso");
+							System.out.println("The agent " + (idAgent) + " can't make the change because he is not idle.");
 							int demActual = obtainDemand("" + sol[numDay][1].charAt(franja), dayHour);
 							int demChange = obtainDemand(activity, dayHour);
-							System.out.println("Verificando insatisfacción de demandas");
+							System.out.println("Verifying demand insatisfaction...");
 							if(demActual < demChange) {
-								System.out.println("El agente " + (idAgent) +  " esta cambiando de demanda ya que la otra esta más critica");
-								System.out.println("Cambiaria de: " + sol[numDay][1]);
+								System.out.println("The agent " + (idAgent) +  " is changing activities because the other is more critic.");
+								System.out.println("The change is from permutation: " + sol[numDay][1]);
 								sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
-								System.out.println("A: " + sol[numDay][1]);
+								System.out.println("To permutation: " + sol[numDay][1]);
 								bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+								pC.put(dayHour, pC.get(dayHour) - 1);
 							}else if(demActual >= demChange) {
 								if(randDemand()) {
-									System.out.println("El agente " + (idAgent) +  " esta cambiando de demanda por el aleatorio");
-									System.out.println("Cambiaria de: " + sol[numDay][1]);
+									System.out.println("The agent " + (idAgent) +  " is changing activities because of the random.");
+									System.out.println("The change is from permutation: " + sol[numDay][1]);
 									sol[numDay][1] = sol[numDay][1].substring(0, franja) + activity.charAt(0) + sol[numDay][1].substring(franja + 1);
-									System.out.println("A: " + sol[numDay][1]);
+									System.out.println("To permutation: " + sol[numDay][1]);
 									bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent - 1, sol);
+									pC.put(dayHour, pC.get(dayHour) - 1);
 								}else {
-									System.out.println("El agente " + (idAgent) + " no cambiará del todo para no afectar la FO de MaxDemand.");
+									System.out.println("The agent " + (idAgent) + " will not change activities so it dones't affect the maxDemand OF.");
 								}
 							}
 						}
