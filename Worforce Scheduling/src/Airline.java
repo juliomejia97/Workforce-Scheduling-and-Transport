@@ -234,35 +234,69 @@ public class Airline extends Agent{
 		}
 	}
 	
-//	private class demandPerturbation extends OneShotBehaviour{
-//		private static final long serialVersionUID = 1L;
-//		String day;
-//		String hour;
-//		String activity;
-//		int increment;
-//
-//		public demandPerturbation(String pDay, String pHour, String pActivity, int pIncrement) {
-//			day = pDay;
-//			hour = pHour;
-//			activity = pActivity;
-//			increment = pIncrement;
-//		}
-//
-//		@Override
-//		public void action() {
-//			//Read from GUI parameters
-//			ACLMessage cfp = new ACLMessage(ACLMessage.REQUEST);
-//			cfp.addReceiver(scheduler);
-//			cfp.setConversationId("peak-demand");
-//			Object[] params = {day,hour,activity,increment};
-//			try {
-//				cfp.setContentObject(params);
-//				myAgent.send(cfp);
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//		}
-//		
-//	}
+	public void agentsNoPresent() {
+		addBehaviour(new OneShotBehaviour() {
+			
+			private static final long serialVersionUID = 1L;
 
+			@Override
+			public void action() {
+				Boolean isSelected;
+				Boolean isNotFree;
+				ArrayList<Boolean> selection;
+				Object[] infoAgent;
+				ArrayList<ArrayList<Boolean>> agentsState = new ArrayList<ArrayList<Boolean>>();
+				//Init
+				for(int i = 0; i < timeslots.size(); i++) {
+					selection = new ArrayList<Boolean>();
+					for(int j=0;j < 8; j++) {
+						selection.add(false);
+					}
+					agentsState.add(selection);
+				}
+				//TODO: Hacer una VA Uniforme que simule cierta cantidad de agentes en la semana
+				
+				//Sacar un agente aleatorio en una semana
+					//Sacar de un día un agente aleatorio
+				isSelected = false;
+				isNotFree = true;
+				infoAgent = null;
+				while(!isSelected && isNotFree) {
+					infoAgent = agentRandom();
+					if(agentsState.get((int)infoAgent[1]).get((int)infoAgent[0]) == false) {
+						isSelected = true;
+						agentsState.get((int)infoAgent[1]).set((int)infoAgent[0],true);
+					}
+					if(!timeslots.get((int)infoAgent[1])[(int) infoAgent[0]][1].equals("LLLL")){
+						isNotFree = false;
+					}
+				}
+				System.out.println("El agente: "+(infoAgent[1])+" "+infoAgent[0]);
+				ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+				msg.setConversationId("agents-absences");
+				msg.addReceiver(scheduler);
+				try {
+					msg.setContentObject(infoAgent);
+					myAgent.send(msg);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+	
+	/*
+	 * This functions returns 
+	 * */
+	
+	private Object[] agentRandom() {
+		Object[] params = new Object[2];
+		//Extract a random position of a day
+		int day = (int) Math.floor(Math.random()*7);
+		int agent = (int) Math.floor(Math.random()*74);
+		params[0] = day;
+		params[1] = agent;
+		return params;
+	}
 }

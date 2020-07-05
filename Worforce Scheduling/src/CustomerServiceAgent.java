@@ -26,6 +26,7 @@ public class CustomerServiceAgent extends Agent{
 	private static final long serialVersionUID = 1L;
 
 	private String name;
+	private int id;
 	private double coorX;
 	private double coorY;
 	private boolean actA;
@@ -114,6 +115,7 @@ public class CustomerServiceAgent extends Agent{
 		catch (FIPAException fe) {
 			fe.printStackTrace();
 		}
+		id = Integer.parseInt(name.split(" ")[1])-1;
 		GeneratePossiblesActivities();
 		addBehaviour(new TimeSlotConfiguration());
 		addBehaviour(new asLeaderGoing());
@@ -126,6 +128,7 @@ public class CustomerServiceAgent extends Agent{
 		addBehaviour(new ReceiveDecisionsReturn());
 		addBehaviour(new reciveSchedule());
 		addBehaviour(new postChange());
+		addBehaviour(new changeMyRest());
 	}
 
 	public double getCoorX() {
@@ -203,11 +206,11 @@ public class CustomerServiceAgent extends Agent{
 				Object info[] = {chr, config};
 				try {
 					reply.setContentObject(info);
+					myAgent.send(reply);
 
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
-				myAgent.send(reply);
 
 
 			}else {
@@ -1051,4 +1054,111 @@ public class CustomerServiceAgent extends Agent{
 		System.out.println(name + " can't attend the unexpected peak of demand.");
 		return -1;
 	}
+	
+	private class changeMyRest extends CyclicBehaviour{
+
+		private static final long serialVersionUID = 1L;
+		private MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("change-rest"),
+				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
+		String dayHour;
+		int numDay;
+		int cap = 0;
+		public void action() {
+			cap = 0;
+			ACLMessage msg = myAgent.receive(mt);
+			if(msg!=null) {
+				dayHour = msg.getContent().split(";")[0];
+				numDay = Integer.parseInt(msg.getContent().split(";")[1]);
+				//Verificar si ese dia lo tengo libre
+				if(mySchudule[numDay][1].equals("LLLL")) {
+					if(evaluateHour(numDay, dayHour)) {
+						System.out.println(name+" - "+"Enviare la propuesta");
+						if(actA) {
+							cap++;
+						}
+						if(actB) {
+							cap++;
+						}
+						if(actC) {
+							cap++;
+						}
+						ACLMessage reply = msg.createReply();
+						reply.setConversationId(msg.getConversationId());
+						reply.setPerformative(ACLMessage.PROPOSE);
+						Object[] params = {cap,id};
+						try {
+							reply.setContentObject(params);
+							myAgent.send(reply);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}else {
+						ACLMessage reply = msg.createReply();
+						reply.setConversationId(msg.getConversationId());
+						reply.setPerformative(ACLMessage.REFUSE);
+						myAgent.send(reply);
+					}
+					
+				}else {
+					ACLMessage reply = msg.createReply();
+					reply.setConversationId(msg.getConversationId());
+					reply.setPerformative(ACLMessage.REFUSE);
+					myAgent.send(reply);
+				}
+			}else {
+				block();
+			}
+		}
+		
+		private boolean evaluateHour(int numDay, String dayHour) {
+			Boolean hab = false;
+			LocalTime hourProp = LocalTime.of(Integer.parseInt(dayHour.split(" ")[1].split(":")[0]), 
+					Integer.parseInt(dayHour.split(" ")[1].split(":")[1]));
+			LocalTime hourNext;
+			LocalTime hourPrev;
+			if(numDay==0) {
+				//Verificar hacia adelante
+				if(mySchudule[numDay+1][1].equals("LLLL")) {
+					
+					return true;
+				}
+				hourNext = LocalTime.of(Integer.parseInt(mySchudule[numDay+1][0].split(" ")[1].split(":")[0]), 
+						Integer.parseInt(mySchudule[numDay+1][0].split(" ")[1].split(":")[1]));
+				hourNext = hourNext.minusHours(21);
+				if(hourProp.compareTo(hourNext)<=0) {
+					hab = true;
+				}
+			}else if(numDay>0&&numDay<7) {
+				//Las dos
+				if(mySchudule[numDay+1][1].equals("LLLL")&&mySchudule[numDay-1][1].equals("LLLL")) {
+					return true;
+				}
+				hourNext = LocalTime.of(Integer.parseInt(mySchudule[numDay+1][0].split(" ")[1].split(":")[0]), 
+						Integer.parseInt(mySchudule[numDay+1][0].split(" ")[1].split(":")[1]));
+				hourPrev = LocalTime.of(Integer.parseInt(mySchudule[numDay-1][0].split(" ")[1].split(":")[0]), 
+						Integer.parseInt(mySchudule[numDay-1][0].split(" ")[1].split(":")[1]));
+				
+				hourNext = hourNext.minusHours(21);
+				hourPrev = hourPrev.plusHours(21);
+				if(hourProp.compareTo(hourPrev)>=0 && hourProp.compareTo(hourNext)<=0) {
+					hab = true;
+				}
+			}else if(numDay==7) {
+				//Verificar hacia atras
+				if(mySchudule[numDay-1][1].equals("LLLL")) {
+					return true;
+				}
+				hourPrev = LocalTime.of(Integer.parseInt(mySchudule[numDay-1][0].split(" ")[1].split(":")[0]), 
+						Integer.parseInt(mySchudule[numDay-1][0].split(" ")[1].split(":")[1]));
+				hourPrev = hourPrev.plusHours(21);
+				if(hourProp.compareTo(hourPrev)>=0) {
+					hab = true;
+				}
+			}
+			return hab;
+		}
+		
+	}
+	 
 }

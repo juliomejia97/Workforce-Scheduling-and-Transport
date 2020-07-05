@@ -3,6 +3,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -126,6 +127,7 @@ public class CustomerServiceSupervisor extends Agent{
 			System.out.println("IOException: " + e.getMessage());
 		}
 		addBehaviour(new resolvePeak());
+		addBehaviour(new solveAbsense());
 	}
 
 	public int getPopulation() {
@@ -440,21 +442,6 @@ public class CustomerServiceSupervisor extends Agent{
 				}
 			}
 		}
-		public void sendDecision(AID agente) {
-			int idAgent;
-			ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
-			cfp.addReceiver(agente);
-			cfp.setConversationId("report-decision");
-			idAgent = Integer.parseInt(agente.getName().split(" ")[1].split("@")[0]) - 1;
-			try {
-				cfp.setContentObject(bestChromosomes.get(bestChromosomes.size()-1).getSolution().get(idAgent));
-				myAgent.send(cfp);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-
-
-		}
 		public void sendBestSolution() {
 			ArrayList<String[][]> timeslots;
 			double bestFo;
@@ -482,7 +469,21 @@ public class CustomerServiceSupervisor extends Agent{
 		}
 
 	}
+	public void sendDecision(AID agente) {
+		int idAgent;
+		ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
+		cfp.addReceiver(agente);
+		cfp.setConversationId("report-decision");
+		idAgent = Integer.parseInt(agente.getName().split(" ")[1].split("@")[0]) - 1;
+		try {
+			cfp.setContentObject(bestChromosomes.get(bestChromosomes.size()-1).getSolution().get(idAgent));
+			this.send(cfp);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
+
+	}
 	public void selectFathers() {
 		double ball;
 		Random rand = new Random();
@@ -843,6 +844,9 @@ public class CustomerServiceSupervisor extends Agent{
 					e.printStackTrace();
 				}
 				myAgent.send(cfp);
+				for(int i=0; i < serviceAgents.length; i++) {
+					sendDecision(serviceAgents[i]);
+				}
 				step = 5;
 				break;
 			default:
@@ -855,9 +859,9 @@ public class CustomerServiceSupervisor extends Agent{
 		public boolean done() {
 			return (step == 5);
 		}
-		
+
 		public int obtainDemand(String act, String dayHour) {
-			
+
 			if(act.equalsIgnoreCase("A")) {
 				return pA.get(dayHour);
 			}else if(act.equalsIgnoreCase("B")) {
@@ -865,12 +869,12 @@ public class CustomerServiceSupervisor extends Agent{
 			}else {
 				return pC.get(dayHour);
 			}
-			
+
 		}
-		
+
 		public boolean randDemand() {
 			Random rd = new Random();
-		    return rd.nextBoolean(); 
+			return rd.nextBoolean(); 
 		}
 
 		public void updateDemand(ArrayList<String[][]> timesolts, HashMap<String, Integer> a, HashMap<String, Integer> b, HashMap<String, Integer> c) {
@@ -979,6 +983,101 @@ public class CustomerServiceSupervisor extends Agent{
 			if(day.equalsIgnoreCase("Mar2")) return "Mie2";
 
 			return "";
+		}
+
+	}
+	private class solveAbsense extends Behaviour {
+
+		private static final long serialVersionUID = 1L;
+		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("agents-absences"),
+				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
+		int step = 0;
+		String[][] changeAgent;
+		Object[] info;
+		int posAgent;
+		int numDay;
+		int repliesCnt ;
+		ArrayList<Object[]> agents = new ArrayList<Object[]>();
+		public void action() {
+			//TimeSlots modify to a free day			
+			switch (step) {
+			case 0:
+				//Recive and do the change
+				ACLMessage msg = myAgent.receive(mt);
+				if(msg!=null) {
+					try {
+						info = (Object[]) msg.getContentObject();
+						posAgent = (int) info[1];
+						numDay = (int) info[0];
+						changeAgent = bestChromosomes.get(bestChromosomes.size()-1).getTimesolts().get(posAgent);
+						System.out.println(posAgent+" "+changeAgent[numDay][1]);
+						changeAgent[numDay][1] = "LLLL";
+						bestChromosomes.get(bestChromosomes.size()-1).setSolutionToTimeslots(posAgent, changeAgent);
+						step = 1;
+					} catch (UnreadableException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}else {
+					block();
+				}				
+				break;
+			case 1:
+				//Obtener la hora y el día
+				String dayHour = changeAgent[(int) info[0]][0];
+				int idActual;
+				//Enviarselo a todos lo agentes menos al enfermito
+				for(int i=0; i < serviceAgents.length; i++) {
+					idActual = Integer.parseInt(serviceAgents[i].getName().split("@")[0].split(" ")[1]);
+					if(idActual != posAgent+1) {
+						ACLMessage mens = new ACLMessage(ACLMessage.REQUEST);
+						mens.addReceiver(serviceAgents[i]);
+						mens.setConversationId("change-rest");
+						mens.setContent(dayHour+";"+numDay);
+						myAgent.send(mens);
+					}
+				}
+				mt = MessageTemplate.or(MessageTemplate.and(MessageTemplate.MatchConversationId("change-rest")
+						, MessageTemplate.MatchPerformative(ACLMessage.PROPOSE)), MessageTemplate.and(MessageTemplate.MatchConversationId("change-rest")
+								, MessageTemplate.MatchPerformative(ACLMessage.REFUSE)));
+				repliesCnt = 0;
+				step=2;
+				agents.clear();
+				break;
+			case 2:
+				ACLMessage reply = myAgent.receive(mt);
+				if(reply != null) {
+					repliesCnt++;
+					if(reply.getPerformative()==ACLMessage.PROPOSE) {
+						try {
+							agents.add((Object[]) reply.getContentObject());
+						} catch (UnreadableException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					if(repliesCnt>=serviceAgents.length-1) {
+						step=3;
+					}
+				}else {
+					block();
+				}		
+				break;
+
+			case 3:
+				System.out.println("Tengo "+agents.size()+" propuestas");
+				block();
+				break;
+			default:
+				break;
+			}
+
+		}
+
+		@Override
+		public boolean done() {
+			// TODO Auto-generated method stub
+			return false;
 		}
 
 	}

@@ -52,6 +52,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 	private JTextField increment;
 	private JTable tblAgentes;
 	private JButton btnPeak;
+	private JButton btnAbsences;
 	private Airline myAgent;
 	private DefaultTableModel model;
 
@@ -60,7 +61,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		myAgent = a;
 		menu = new JFrame();
 		menu.getContentPane().setBackground(Color.WHITE);
-		menu.setSize(700, 700);
+		menu.setSize(700, 750);
 		menu.setTitle("Airline Scheduling System");
 		menu.getContentPane().setLayout(new BorderLayout());
 		menu.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -68,7 +69,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		DecimalFormat df = new DecimalFormat("#.##");
 
 		setBackground(Color.BLACK);
-		setSize(700, 600);
+		setSize(700, 750);
 		setLayout(null);
 
 		lblTitulo = new JLabel("Airline Scheduling System");
@@ -208,6 +209,20 @@ public class AirlineGUI extends JPanel implements WindowListener{
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				myAgent.peakDemand(day.getSelectedItem().toString(), hour.getSelectedItem().toString(), act.getSelectedItem().toString(), Integer.parseInt(increment.getText()));
+			}
+		});
+		
+		btnAbsences = new JButton("Simulate Absences");
+		btnAbsences.setFont(new Font("Tahoma", Font.PLAIN, 17));
+		btnAbsences.setForeground(Color.RED);
+		btnAbsences.setBounds(270, 660, 150, 26);
+		add(btnAbsences);
+		
+		btnAbsences.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				myAgent.agentsNoPresent();
 			}
 		});
 		
