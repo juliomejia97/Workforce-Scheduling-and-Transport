@@ -201,7 +201,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		btnPeak = new JButton("Start Peak");
 		btnPeak.setFont(new Font("Tahoma", Font.PLAIN, 17));
 		btnPeak.setForeground(Color.RED);
-		btnPeak.setBounds(270, 630, 150, 26);
+		btnPeak.setBounds(150, 630, 150, 26);
 		add(btnPeak);
 
 		btnPeak.addActionListener(new ActionListener() {
@@ -215,7 +215,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		btnAbsences = new JButton("Simulate Absences");
 		btnAbsences.setFont(new Font("Tahoma", Font.PLAIN, 17));
 		btnAbsences.setForeground(Color.RED);
-		btnAbsences.setBounds(270, 660, 150, 26);
+		btnAbsences.setBounds(320, 630, 200, 26);
 		add(btnAbsences);
 		
 		btnAbsences.addActionListener(new ActionListener() {

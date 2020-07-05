@@ -246,18 +246,14 @@ public class Airline extends Agent{
 				ArrayList<Boolean> selection;
 				Object[] infoAgent;
 				ArrayList<ArrayList<Boolean>> agentsState = new ArrayList<ArrayList<Boolean>>();
-				//Init
 				for(int i = 0; i < timeslots.size(); i++) {
 					selection = new ArrayList<Boolean>();
 					for(int j=0;j < 8; j++) {
 						selection.add(false);
 					}
 					agentsState.add(selection);
-				}
-				//TODO: Hacer una VA Uniforme que simule cierta cantidad de agentes en la semana
-				
-				//Sacar un agente aleatorio en una semana
-					//Sacar de un día un agente aleatorio
+				}				
+
 				isSelected = false;
 				isNotFree = true;
 				infoAgent = null;
@@ -271,7 +267,6 @@ public class Airline extends Agent{
 						isNotFree = false;
 					}
 				}
-				System.out.println("El agente: "+(infoAgent[1])+" "+infoAgent[0]);
 				ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
 				msg.setConversationId("agents-absences");
 				msg.addReceiver(scheduler);
@@ -279,22 +274,16 @@ public class Airline extends Agent{
 					msg.setContentObject(infoAgent);
 					myAgent.send(msg);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
 		});
 	}
 	
-	/*
-	 * This functions returns 
-	 * */
-	
 	private Object[] agentRandom() {
 		Object[] params = new Object[2];
-		//Extract a random position of a day
-		int day = (int) Math.floor(Math.random()*7);
-		int agent = (int) Math.floor(Math.random()*74);
+		int day = (int) Math.floor(Math.random() * 7);
+		int agent = (int) Math.floor(Math.random() * 74);
 		params[0] = day;
 		params[1] = agent;
 		return params;

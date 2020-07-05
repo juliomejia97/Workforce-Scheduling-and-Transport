@@ -3,7 +3,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -996,13 +995,12 @@ public class CustomerServiceSupervisor extends Agent{
 		Object[] info;
 		int posAgent;
 		int numDay;
-		int repliesCnt ;
+		int repliesCnt;
+		String perm;
 		ArrayList<Object[]> agents = new ArrayList<Object[]>();
 		public void action() {
-			//TimeSlots modify to a free day			
 			switch (step) {
 			case 0:
-				//Recive and do the change
 				ACLMessage msg = myAgent.receive(mt);
 				if(msg!=null) {
 					try {
@@ -1010,12 +1008,13 @@ public class CustomerServiceSupervisor extends Agent{
 						posAgent = (int) info[1];
 						numDay = (int) info[0];
 						changeAgent = bestChromosomes.get(bestChromosomes.size()-1).getTimesolts().get(posAgent);
-						System.out.println(posAgent+" "+changeAgent[numDay][1]);
+						System.out.println("Agent : " + (posAgent + 1) +" will be absent on day: " + numDay);
+						System.out.println("The activities to do are: " + changeAgent[numDay][1]);
+						perm = changeAgent[numDay][1];
 						changeAgent[numDay][1] = "LLLL";
 						bestChromosomes.get(bestChromosomes.size()-1).setSolutionToTimeslots(posAgent, changeAgent);
 						step = 1;
 					} catch (UnreadableException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}else {
@@ -1023,17 +1022,15 @@ public class CustomerServiceSupervisor extends Agent{
 				}				
 				break;
 			case 1:
-				//Obtener la hora y el día
 				String dayHour = changeAgent[(int) info[0]][0];
 				int idActual;
-				//Enviarselo a todos lo agentes menos al enfermito
 				for(int i=0; i < serviceAgents.length; i++) {
 					idActual = Integer.parseInt(serviceAgents[i].getName().split("@")[0].split(" ")[1]);
-					if(idActual != posAgent+1) {
+					if(idActual != posAgent + 1) {
 						ACLMessage mens = new ACLMessage(ACLMessage.REQUEST);
 						mens.addReceiver(serviceAgents[i]);
 						mens.setConversationId("change-rest");
-						mens.setContent(dayHour+";"+numDay);
+						mens.setContent(dayHour + ";" + numDay + ";" + perm);
 						myAgent.send(mens);
 					}
 				}
@@ -1041,31 +1038,31 @@ public class CustomerServiceSupervisor extends Agent{
 						, MessageTemplate.MatchPerformative(ACLMessage.PROPOSE)), MessageTemplate.and(MessageTemplate.MatchConversationId("change-rest")
 								, MessageTemplate.MatchPerformative(ACLMessage.REFUSE)));
 				repliesCnt = 0;
-				step=2;
 				agents.clear();
+				step = 2;
 				break;
 			case 2:
 				ACLMessage reply = myAgent.receive(mt);
 				if(reply != null) {
 					repliesCnt++;
-					if(reply.getPerformative()==ACLMessage.PROPOSE) {
+					if(reply.getPerformative() == ACLMessage.PROPOSE) {
 						try {
 							agents.add((Object[]) reply.getContentObject());
 						} catch (UnreadableException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 					}
-					if(repliesCnt>=serviceAgents.length-1) {
-						step=3;
+					if(repliesCnt == 74) {
+						step = 3;
 					}
+
 				}else {
 					block();
 				}		
 				break;
 
 			case 3:
-				System.out.println("Tengo "+agents.size()+" propuestas");
+				System.out.println("I have " + agents.size() + " proposes");
 				block();
 				break;
 			default:
@@ -1076,7 +1073,6 @@ public class CustomerServiceSupervisor extends Agent{
 
 		@Override
 		public boolean done() {
-			// TODO Auto-generated method stub
 			return false;
 		}
 

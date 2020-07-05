@@ -69,6 +69,7 @@ public class CustomerServiceAgent extends Agent{
 		this.days.put("Dom", Boolean.parseBoolean(data[11].trim()));
 		this.days.put("Lun", Boolean.parseBoolean(data[12].trim()));
 		this.days.put("Mar2", Boolean.parseBoolean(data[13].trim()));
+		this.id = Integer.parseInt(this.name.split(" ")[1]) - 1;
 
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(new File("./Distances.csv")));
@@ -115,7 +116,6 @@ public class CustomerServiceAgent extends Agent{
 		catch (FIPAException fe) {
 			fe.printStackTrace();
 		}
-		id = Integer.parseInt(name.split(" ")[1])-1;
 		GeneratePossiblesActivities();
 		addBehaviour(new TimeSlotConfiguration());
 		addBehaviour(new asLeaderGoing());
@@ -937,7 +937,7 @@ public class CustomerServiceAgent extends Agent{
 								change = slot.charAt(franja);
 							}
 							if(change == 'A') {
-									pond = 10;
+								pond = 10;
 							} else if(change == 'B') {
 								if(act == 'A') {
 									pond = 5;
@@ -951,7 +951,7 @@ public class CustomerServiceAgent extends Agent{
 									pond = 2;
 								}
 							}
-							
+
 							ACLMessage reply = msg.createReply();
 							Object[] params = {name.split(" ")[1], before, franja, pond};
 							reply.setContentObject(params);
@@ -1054,7 +1054,7 @@ public class CustomerServiceAgent extends Agent{
 		System.out.println(name + " can't attend the unexpected peak of demand.");
 		return -1;
 	}
-	
+
 	private class changeMyRest extends CyclicBehaviour{
 
 		private static final long serialVersionUID = 1L;
@@ -1062,35 +1062,40 @@ public class CustomerServiceAgent extends Agent{
 				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
 		String dayHour;
 		int numDay;
-		int cap = 0;
+		int cap;
+		String perm;
 		public void action() {
 			cap = 0;
 			ACLMessage msg = myAgent.receive(mt);
 			if(msg!=null) {
 				dayHour = msg.getContent().split(";")[0];
 				numDay = Integer.parseInt(msg.getContent().split(";")[1]);
+				perm = msg.getContent().split(";")[2];
 				//Verificar si ese dia lo tengo libre
 				if(mySchudule[numDay][1].equals("LLLL")) {
 					if(evaluateHour(numDay, dayHour)) {
-						System.out.println(name+" - "+"Enviare la propuesta");
-						if(actA) {
-							cap++;
-						}
-						if(actB) {
-							cap++;
-						}
-						if(actC) {
-							cap++;
+						System.out.println(name + " is available and is sending proposal.");
+						for(char act: perm.toCharArray()) {
+							switch(act) {
+							case 'A':
+								if(actA) cap++;
+								break;
+							case 'B':
+								if(actB) cap++;
+								break;
+							case 'C':
+								if(actC) cap++;
+								break;
+							}
 						}
 						ACLMessage reply = msg.createReply();
 						reply.setConversationId(msg.getConversationId());
 						reply.setPerformative(ACLMessage.PROPOSE);
-						Object[] params = {cap,id};
+						Object[] params = {cap, id};
 						try {
 							reply.setContentObject(params);
 							myAgent.send(reply);
 						} catch (IOException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 					}else {
@@ -1099,7 +1104,7 @@ public class CustomerServiceAgent extends Agent{
 						reply.setPerformative(ACLMessage.REFUSE);
 						myAgent.send(reply);
 					}
-					
+
 				}else {
 					ACLMessage reply = msg.createReply();
 					reply.setConversationId(msg.getConversationId());
@@ -1110,41 +1115,53 @@ public class CustomerServiceAgent extends Agent{
 				block();
 			}
 		}
-		
+
 		private boolean evaluateHour(int numDay, String dayHour) {
 			Boolean hab = false;
 			LocalTime hourProp = LocalTime.of(Integer.parseInt(dayHour.split(" ")[1].split(":")[0]), 
 					Integer.parseInt(dayHour.split(" ")[1].split(":")[1]));
 			LocalTime hourNext;
 			LocalTime hourPrev;
-			if(numDay==0) {
+			if(numDay == 0) {
 				//Verificar hacia adelante
-				if(mySchudule[numDay+1][1].equals("LLLL")) {
-					
+				if(mySchudule[numDay + 1][1].equals("LLLL")) {
 					return true;
 				}
 				hourNext = LocalTime.of(Integer.parseInt(mySchudule[numDay+1][0].split(" ")[1].split(":")[0]), 
 						Integer.parseInt(mySchudule[numDay+1][0].split(" ")[1].split(":")[1]));
 				hourNext = hourNext.minusHours(21);
-				if(hourProp.compareTo(hourNext)<=0) {
+				if(hourProp.compareTo(hourNext) <= 0) {
 					hab = true;
 				}
-			}else if(numDay>0&&numDay<7) {
+
+			}else if(numDay > 0 && numDay < 7) {
 				//Las dos
-				if(mySchudule[numDay+1][1].equals("LLLL")&&mySchudule[numDay-1][1].equals("LLLL")) {
-					return true;
-				}
 				hourNext = LocalTime.of(Integer.parseInt(mySchudule[numDay+1][0].split(" ")[1].split(":")[0]), 
 						Integer.parseInt(mySchudule[numDay+1][0].split(" ")[1].split(":")[1]));
 				hourPrev = LocalTime.of(Integer.parseInt(mySchudule[numDay-1][0].split(" ")[1].split(":")[0]), 
 						Integer.parseInt(mySchudule[numDay-1][0].split(" ")[1].split(":")[1]));
-				
-				hourNext = hourNext.minusHours(21);
 				hourPrev = hourPrev.plusHours(21);
-				if(hourProp.compareTo(hourPrev)>=0 && hourProp.compareTo(hourNext)<=0) {
+				hourNext = hourNext.minusHours(21);
+
+				if(mySchudule[numDay + 1][1].equals("LLLL") && mySchudule[numDay - 1][1].equals("LLLL")) {
+					return true;
+				}
+				if(mySchudule[numDay + 1][1].equals("LLLL")) {
+					if(hourProp.compareTo(hourPrev) >= 0) {
+						return true;
+					}
+				}
+				if(mySchudule[numDay - 1][1].equals("LLLL")) {
+					if(hourProp.compareTo(hourNext) <= 0) {
+						return true;
+					}
+				}
+
+				if(hourProp.compareTo(hourPrev) >= 0 && hourProp.compareTo(hourNext) <= 0) {
 					hab = true;
 				}
-			}else if(numDay==7) {
+
+			}else if(numDay == 7) {
 				//Verificar hacia atras
 				if(mySchudule[numDay-1][1].equals("LLLL")) {
 					return true;
@@ -1152,13 +1169,11 @@ public class CustomerServiceAgent extends Agent{
 				hourPrev = LocalTime.of(Integer.parseInt(mySchudule[numDay-1][0].split(" ")[1].split(":")[0]), 
 						Integer.parseInt(mySchudule[numDay-1][0].split(" ")[1].split(":")[1]));
 				hourPrev = hourPrev.plusHours(21);
-				if(hourProp.compareTo(hourPrev)>=0) {
+				if(hourProp.compareTo(hourPrev) >= 0) {
 					hab = true;
 				}
 			}
 			return hab;
 		}
-		
 	}
-	 
 }
