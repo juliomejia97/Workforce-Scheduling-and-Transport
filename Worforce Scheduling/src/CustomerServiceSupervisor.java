@@ -446,6 +446,7 @@ public class CustomerServiceSupervisor extends Agent{
 			double bestFo;
 			double max;
 			double unatended;
+			double variability;
 			ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
 			cfp.addReceiver(airline[0]);
 			cfp.setConversationId("best-schedule");
@@ -455,7 +456,8 @@ public class CustomerServiceSupervisor extends Agent{
 			unatended = bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandA() +
 					bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandB() + 
 					bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandC();
-			Object[] params = {timeslots,bestFo, max, unatended};
+			variability = bestChromosomes.get(bestChromosomes.size() - 1).getVariability();
+			Object[] params = {timeslots,bestFo, max, unatended, variability};
 			try {
 				cfp.setContentObject(params);
 			} catch (IOException e) {
@@ -827,6 +829,7 @@ public class CustomerServiceSupervisor extends Agent{
 				double bestFo;
 				double max;
 				double unatended;
+				double variability;
 				ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
 				cfp.addReceiver(airline[0]);
 				cfp.setConversationId("peak-demand-result");
@@ -836,7 +839,8 @@ public class CustomerServiceSupervisor extends Agent{
 				unatended = bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandA() +
 						bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandB() + 
 						bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandC();
-				Object[] params = {timeslots,bestFo, max, unatended};
+				variability = bestChromosomes.get(bestChromosomes.size() - 1).getVariability();
+				Object[] params = {timeslots,bestFo, max, unatended, variability};
 				try {
 					cfp.setContentObject(params);
 				} catch (IOException e) {
@@ -992,27 +996,23 @@ public class CustomerServiceSupervisor extends Agent{
 				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
 		int step = 0;
 		String[][] changeAgent;
-		Object[] info;
+		ArrayList<Object[]> info;
 		int posAgent;
 		int numDay;
 		int repliesCnt;
-		String perm;
+		String dayHour = "";
+		String perm = "";
+		int cntAbsents;
 		ArrayList<Object[]> agents = new ArrayList<Object[]>();
+		@SuppressWarnings("unchecked")
 		public void action() {
 			switch (step) {
 			case 0:
 				ACLMessage msg = myAgent.receive(mt);
 				if(msg!=null) {
 					try {
-						info = (Object[]) msg.getContentObject();
-						posAgent = (int) info[1];
-						numDay = (int) info[0];
-						changeAgent = bestChromosomes.get(bestChromosomes.size()-1).getTimesolts().get(posAgent);
-						System.out.println("Agent : " + (posAgent + 1) +" will be absent on day: " + numDay);
-						System.out.println("The activities to do are: " + changeAgent[numDay][1]);
-						perm = changeAgent[numDay][1];
-						changeAgent[numDay][1] = "LLLL";
-						bestChromosomes.get(bestChromosomes.size()-1).setSolutionToTimeslots(posAgent, changeAgent);
+						info =  (ArrayList<Object[]>) msg.getContentObject();
+						cntAbsents = 0;
 						step = 1;
 					} catch (UnreadableException e) {
 						e.printStackTrace();
@@ -1022,8 +1022,20 @@ public class CustomerServiceSupervisor extends Agent{
 				}				
 				break;
 			case 1:
-				String dayHour = changeAgent[(int) info[0]][0];
 				int idActual;
+				posAgent = (int) info.get(cntAbsents)[1];
+				numDay = (int) info.get(cntAbsents)[0];
+				changeAgent = bestChromosomes.get(bestChromosomes.size() - 1).getTimesolts().get(posAgent);
+				System.out.println();
+				System.out.println();
+				System.out.println("Supervisor checking the absent # " + (cntAbsents + 1));
+				System.out.println("Agent : " + (posAgent + 1) +" will be absent on day and hour: " + changeAgent[numDay][0]);
+				System.out.println("The activities to do are: " + changeAgent[numDay][1]);
+				perm = changeAgent[numDay][1];
+				dayHour = changeAgent[numDay][0];
+				changeAgent[numDay][1] = "LLLL";
+				bestChromosomes.get(bestChromosomes.size()-1).setSolutionToTimeslots(posAgent, changeAgent);
+
 				for(int i=0; i < serviceAgents.length; i++) {
 					idActual = Integer.parseInt(serviceAgents[i].getName().split("@")[0].split(" ")[1]);
 					if(idActual != posAgent + 1) {
@@ -1052,7 +1064,7 @@ public class CustomerServiceSupervisor extends Agent{
 							e.printStackTrace();
 						}
 					}
-					if(repliesCnt == 74) {
+					if(repliesCnt == serviceAgents.length - 1) {
 						step = 3;
 					}
 
@@ -1062,18 +1074,112 @@ public class CustomerServiceSupervisor extends Agent{
 				break;
 
 			case 3:
-				System.out.println("I have " + agents.size() + " proposes");
-				block();
+				if(agents.size() > 0) {
+					AID agentConfirmed = null;
+					//System.out.println("I have " + agents.size() + " proposes");
+					sortCap();
+					System.out.println("The agent " + (((int) agents.get(0)[0]) + 1) + " is going to cover the shift with the slots: " + agents.get(0)[3]);
+					int idAgent = (int) agents.get(0)[0];
+					String[][] sol = bestChromosomes.get(bestChromosomes.size() - 1).getTimesolts().get(idAgent);
+					sol[numDay][1] = agents.get(0)[3].toString();
+					sol[numDay][0] = dayHour;
+					bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent, sol);
+					bestChromosomes.get(bestChromosomes.size() - 1).calculateSchedulingFO(actA, actB, actC, breaks);
+					
+					for(int i = 0; i < serviceAgents.length; i++) {
+						int myId = Integer.parseInt(serviceAgents[i].getName().split("@")[0].split(" ")[1]);
+						if(myId == (idAgent + 1)) {
+							agentConfirmed = serviceAgents[i];
+						}
+					}
+					
+					//System.out.println("Sending confirmation to agent " + (idAgent + 1));
+					ACLMessage msgConfirm = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+					msgConfirm.setConversationId("absent-change-accepted");
+					Object[] params = {sol};
+					try {
+						msgConfirm.setContentObject(params);
+						msgConfirm.addReceiver(agentConfirmed);
+						myAgent.send(msgConfirm);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					
+				} else {
+					System.out.println("No agent can cover the absent agent. No proposes found");
+				}
+				cntAbsents++;
+				step = 4;
+				break;
+			
+			case 4:
+				if(cntAbsents == info.size()) {
+					step = 5;
+				}else {
+					step = 1;
+				}
+				break;
+				
+			case 5:
+				ArrayList<String[][]> timeslots;
+				double bestFo;
+				double max;
+				double unatended;
+				double variability;
+				ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
+				cfp.addReceiver(airline[0]);
+				cfp.setConversationId("absence-result");
+				timeslots= bestChromosomes.get(bestChromosomes.size() - 1).getTimesolts();
+				bestFo = bestChromosomes.get(bestChromosomes.size() - 1).getFO();
+				max = bestChromosomes.get(bestChromosomes.size() - 1).getMaxDemand();
+				unatended = bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandA() +
+						bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandB() + 
+						bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandC();
+				variability = bestChromosomes.get(bestChromosomes.size() - 1).getVariability();
+				Object[] params = {timeslots,bestFo, max, unatended, variability};
+				try {
+					cfp.setContentObject(params);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				myAgent.send(cfp);
+				for(int i=0; i < serviceAgents.length; i++) {
+					sendDecision(serviceAgents[i]);
+				}
+				step = 6;
 				break;
 			default:
 				break;
 			}
 
 		}
+		
+		public void sortCap() {	
+			
+			for(int i = 0; i < agents.size() - 1; i++) {
+				for(int j = i + 1; j < agents.size(); j++) {
+					Object[] infoI = agents.get(i);
+					Object[] infoJ = agents.get(j);
+					Object[] temp;
+					if((int) infoI[1] < (int) infoJ[1]) {
+						temp = agents.get(i);
+						agents.set(i, agents.get(j));
+						agents.set(j, temp);
+					} else if(((int) infoI[1] == (int) infoJ[1])) {
+						if((long) infoI[2] > (long) infoJ[2]) {
+							temp = agents.get(i);
+							agents.set(i, agents.get(j));
+							agents.set(j, temp);
+						}
+					}
+				}
+			}	
+			
+		}
 
 		@Override
 		public boolean done() {
-			return false;
+			return (step == 6);
 		}
 
 	}

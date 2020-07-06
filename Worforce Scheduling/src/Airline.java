@@ -31,17 +31,18 @@ public class Airline extends Agent{
 	private double maxDemand;
 	private double unatendedDemand;
 	private double wellnessFO;
+	private double variability;
 	private double nRoutes;
 	@Override
 	protected void setup() {
 
 		try {
-			
+
 			jade.core.Runtime runtime = jade.core.Runtime.instance();
 			container = runtime.createAgentContainer(new ProfileImpl());
-			
+
 			System.out.println("Airline started...");
-			
+
 			BufferedReader br;
 			br = new BufferedReader(new FileReader(new File("./Agent parameters.csv")));
 			String line = br.readLine();
@@ -49,17 +50,17 @@ public class Airline extends Agent{
 			int cont = 1;
 
 			while(line != null) {
-				
+
 				String name = "Agente ";
 				Object [] params = {line};
 				container.createNewAgent(name + cont, CustomerServiceAgent.class.getName(), params).start();
 				cont++;
 				line = br.readLine();
-				
+
 			}
 			br.close();
-			
-			
+
+
 		} catch (FileNotFoundException e) {
 			System.out.println("FileNotFoundException: " + e.getMessage());
 		} catch (IOException e) {
@@ -80,24 +81,25 @@ public class Airline extends Agent{
 		catch (FIPAException fe) {
 			fe.printStackTrace();
 		}
-		
-		myInterface = new AirlineGUI(this, new ArrayList<String[][]>(), 0, 0, 0, 0, 0);
+
+		myInterface = new AirlineGUI(this, new ArrayList<String[][]>(), 0, 0, 0, 0, 0, 0);
 		addBehaviour(new bestSchedule());
 		addBehaviour(new resultRouting());
 		addBehaviour(new peakDemandResult());
+		addBehaviour(new absenceResult());
 	}
-	
+
 	public AirlineGUI getMyInterface() {
 		return myInterface;
 	}
-	
+
 	public void setMyInterface(AirlineGUI myInterface) {
 		this.myInterface = myInterface;
 	}
-	
+
 	public void peakDemand(String day, String hour, String activity, int increment) {
 		addBehaviour(new OneShotBehaviour() {
-			
+
 			private static final long serialVersionUID = 1L;
 
 			@Override
@@ -116,13 +118,13 @@ public class Airline extends Agent{
 			}
 		});
 	}
-	
+
 	private class peakDemandResult extends CyclicBehaviour{
-		
+
 		private static final long serialVersionUID = 1L;
 		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("peak-demand-result"),
 				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
-		
+
 		@SuppressWarnings("unchecked")
 		@Override
 		public void action() {
@@ -137,7 +139,8 @@ public class Airline extends Agent{
 					schedulingFO = (Double) args[1];
 					maxDemand = (Double) args[2];
 					unatendedDemand = (Double) args[3];
-					myInterface.displayFO(timeslots, schedulingFO, wellnessFO, nRoutes, maxDemand, unatendedDemand);
+					variability = (Double) args[4];
+					myInterface.displayFO(timeslots, schedulingFO, wellnessFO, nRoutes, maxDemand, unatendedDemand, variability);
 				} catch (UnreadableException e) {
 					e.printStackTrace();
 				}
@@ -146,13 +149,44 @@ public class Airline extends Agent{
 			}
 		}
 	}
-	
+
+	private class absenceResult extends CyclicBehaviour{
+
+		private static final long serialVersionUID = 1L;
+		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("absence-result"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public void action() {
+			ACLMessage msg = myAgent.receive(mt);
+			Object[] args;
+			ArrayList<String[][]> schedule = null;
+			if(msg != null) {
+				try {
+					args =  (Object[]) msg.getContentObject();
+					schedule = (ArrayList<String[][]>) args[0];
+					timeslots = schedule;
+					schedulingFO = (Double) args[1];
+					maxDemand = (Double) args[2];
+					unatendedDemand = (Double) args[3];
+					variability = (Double) args[4];
+					myInterface.displayFO(timeslots, schedulingFO, wellnessFO, nRoutes, maxDemand, unatendedDemand, variability);
+				} catch (UnreadableException e) {
+					e.printStackTrace();
+				}
+			}else {
+				block();
+			}
+		}
+	}
+
 	private class bestSchedule extends CyclicBehaviour {
-		
+
 		private static final long serialVersionUID = 1L;
 		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("best-schedule"),
 				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
-		
+
 		@SuppressWarnings("unchecked")
 		@Override
 		public void action() {
@@ -167,6 +201,7 @@ public class Airline extends Agent{
 					schedulingFO = (Double) args[1];
 					maxDemand = (Double) args[2];
 					unatendedDemand = (Double) args[3];
+					variability = (Double) args[4];
 					scheduler = msg.getSender();
 				} catch (UnreadableException e) {
 					e.printStackTrace();
@@ -185,9 +220,9 @@ public class Airline extends Agent{
 			}else {
 				block();
 			}
-			
+
 		}
-		
+
 	}
 	private class requestRouting extends OneShotBehaviour{
 
@@ -205,11 +240,11 @@ public class Airline extends Agent{
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			
+
 		}
-		
+
 	}
-	
+
 	private class resultRouting extends CyclicBehaviour {
 
 		private static final long serialVersionUID = 1L;
@@ -223,55 +258,64 @@ public class Airline extends Agent{
 					Object[] params = (Object[]) msg.getContentObject();
 					wellnessFO = (double) params[0];
 					nRoutes = (double) params[1];
-					myInterface.displayFO(timeslots, schedulingFO, wellnessFO, nRoutes, maxDemand, unatendedDemand);
+					myInterface.displayFO(timeslots, schedulingFO, wellnessFO, nRoutes, maxDemand, unatendedDemand, variability);
 				} catch (UnreadableException e) {
 					e.printStackTrace();
 				}
-				
+
 			}else {
 				block();
 			}
 		}
 	}
-	
+
 	public void agentsNoPresent() {
 		addBehaviour(new OneShotBehaviour() {
-			
+
 			private static final long serialVersionUID = 1L;
 
 			@Override
 			public void action() {
+
+				int cantAgentsAbsent = (int) Math.floor(Math.random() * 6) + 1;
 				Boolean isSelected;
 				Boolean isNotFree;
 				ArrayList<Boolean> selection;
 				Object[] infoAgent;
+				ArrayList<Object[]> absents = new ArrayList<Object[]>();
 				ArrayList<ArrayList<Boolean>> agentsState = new ArrayList<ArrayList<Boolean>>();
 				for(int i = 0; i < timeslots.size(); i++) {
 					selection = new ArrayList<Boolean>();
-					for(int j=0;j < 8; j++) {
+					for(int j = 0; j < 8; j++) {
 						selection.add(false);
 					}
 					agentsState.add(selection);
-				}				
-
-				isSelected = false;
-				isNotFree = true;
-				infoAgent = null;
-				while(!isSelected && isNotFree) {
-					infoAgent = agentRandom();
-					if(agentsState.get((int)infoAgent[1]).get((int)infoAgent[0]) == false) {
-						isSelected = true;
-						agentsState.get((int)infoAgent[1]).set((int)infoAgent[0],true);
+				}			
+				
+				for(int i = 0; i < cantAgentsAbsent; i++) {
+					isSelected = false;
+					isNotFree = true;
+					infoAgent = null;
+					while(!isSelected && isNotFree) {
+						infoAgent = agentRandom();
+						if(agentsState.get((int)infoAgent[1]).get((int)infoAgent[0]) == false) {
+							isSelected = true;
+							agentsState.get((int)infoAgent[1]).set((int)infoAgent[0],true);
+						}
+						if(!timeslots.get((int)infoAgent[1])[(int) infoAgent[0]][1].equals("LLLL")){
+							//System.out.println("Agente: " + ((int) infoAgent[1] + 1) + " " + timeslots.get((int)infoAgent[1])[(int) infoAgent[0]][1]);
+							isNotFree = false;
+						}
 					}
-					if(!timeslots.get((int)infoAgent[1])[(int) infoAgent[0]][1].equals("LLLL")){
-						isNotFree = false;
-					}
+					if(isSelected == true && isNotFree == false)
+						absents.add(infoAgent);
 				}
+
 				ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
 				msg.setConversationId("agents-absences");
 				msg.addReceiver(scheduler);
 				try {
-					msg.setContentObject(infoAgent);
+					msg.setContentObject(absents);
 					myAgent.send(msg);
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -279,7 +323,7 @@ public class Airline extends Agent{
 			}
 		});
 	}
-	
+
 	private Object[] agentRandom() {
 		Object[] params = new Object[2];
 		int day = (int) Math.floor(Math.random() * 7);

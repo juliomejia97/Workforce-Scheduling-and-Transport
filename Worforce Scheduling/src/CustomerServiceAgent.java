@@ -27,6 +27,7 @@ public class CustomerServiceAgent extends Agent{
 
 	private String name;
 	private int id;
+	private int initHour;
 	private double coorX;
 	private double coorY;
 	private boolean actA;
@@ -70,6 +71,7 @@ public class CustomerServiceAgent extends Agent{
 		this.days.put("Lun", Boolean.parseBoolean(data[12].trim()));
 		this.days.put("Mar2", Boolean.parseBoolean(data[13].trim()));
 		this.id = Integer.parseInt(this.name.split(" ")[1]) - 1;
+		this.initHour = -1;
 
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(new File("./Distances.csv")));
@@ -129,6 +131,7 @@ public class CustomerServiceAgent extends Agent{
 		addBehaviour(new reciveSchedule());
 		addBehaviour(new postChange());
 		addBehaviour(new changeMyRest());
+		addBehaviour(new awaitAbsentConfirmation());
 	}
 
 	public double getCoorX() {
@@ -423,11 +426,6 @@ public class CustomerServiceAgent extends Agent{
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
-					//					for(Integer actual: vehicle) {
-					//						System.out.print(actual + " - ");
-					//					}
-					//					System.out.println();
-					//					System.out.println();
 				}
 
 
@@ -792,14 +790,14 @@ public class CustomerServiceAgent extends Agent{
 			ACLMessage msg = myAgent.receive(mt);
 			if(msg!=null) {
 				try {
-					Double info = (Double) msg.getContentObject();
-					double permutation = info%1;
-					int hour = (int) (info - permutation);
+					double info = (Double) msg.getContentObject();
+					double permutation = info % 1;
+					initHour = (int) (info - permutation);
 					int position = (int) Math.round(permutation*opcions.size());
 					if(position>0) {
 						position--;
 					}
-					mySchudule = generateSchedule(hour, position);
+					mySchudule = generateSchedule(initHour, position);
 				} catch (UnreadableException e) {
 					e.printStackTrace();
 				}
@@ -889,6 +887,7 @@ public class CustomerServiceAgent extends Agent{
 		return config;
 	}
 	public String getHour(int hour) {
+
 		String select;
 		select = "";
 		int entero = hour / 2;
@@ -1074,24 +1073,46 @@ public class CustomerServiceAgent extends Agent{
 				//Verificar si ese dia lo tengo libre
 				if(mySchudule[numDay][1].equals("LLLL")) {
 					if(evaluateHour(numDay, dayHour)) {
-						System.out.println(name + " is available and is sending proposal.");
+						String myHour = getHour(initHour);
+						LocalTime initH = LocalTime.of(Integer.parseInt(myHour.split(":")[0]), Integer.parseInt(myHour.split(":")[1]));
+						LocalTime attendH = LocalTime.of(Integer.parseInt(dayHour.split(" ")[1].split(":")[0]), Integer.parseInt(dayHour.split(" ")[1].split(":")[1]));
+						long diff = Math.abs(ChronoUnit.HOURS.between(initH, attendH));
+
+						//System.out.println(name + " is available and is sending proposal.");
+						String prop = "";
 						for(char act: perm.toCharArray()) {
 							switch(act) {
 							case 'A':
-								if(actA) cap++;
+								if(actA) {
+									cap++;
+									prop += "A";
+								}else {
+									prop += randActivity();
+								}
 								break;
 							case 'B':
-								if(actB) cap++;
+								if(actB) {
+									cap++;
+									prop += "B";
+								}else {
+									prop += randActivity();
+								}
 								break;
 							case 'C':
-								if(actC) cap++;
+								if(actC) {
+									cap++;
+									prop += "C";
+								}else {
+									prop += randActivity();
+								}
 								break;
 							}
 						}
+
 						ACLMessage reply = msg.createReply();
 						reply.setConversationId(msg.getConversationId());
 						reply.setPerformative(ACLMessage.PROPOSE);
-						Object[] params = {cap, id};
+						Object[] params = {id, cap, diff, prop};
 						try {
 							reply.setContentObject(params);
 							myAgent.send(reply);
@@ -1114,6 +1135,29 @@ public class CustomerServiceAgent extends Agent{
 			}else {
 				block();
 			}
+		}
+
+		private String randActivity() {
+
+			String act = "";
+			int opt;
+			boolean found = false;
+
+			while(!found) {
+				opt = (int) Math.floor(Math.random() * 2);
+				if(opt == 0 && actA) {
+					act = "A";
+					found = true;
+				}else if(opt == 1 && actB) {
+					act = "B";
+					found = true;
+				}else if(opt == 2 && actC) {
+					act ="C";
+					found = true;
+				}
+			}
+			return act;
+
 		}
 
 		private boolean evaluateHour(int numDay, String dayHour) {
@@ -1146,11 +1190,13 @@ public class CustomerServiceAgent extends Agent{
 				if(mySchudule[numDay + 1][1].equals("LLLL") && mySchudule[numDay - 1][1].equals("LLLL")) {
 					return true;
 				}
+
 				if(mySchudule[numDay + 1][1].equals("LLLL")) {
 					if(hourProp.compareTo(hourPrev) >= 0) {
 						return true;
 					}
 				}
+
 				if(mySchudule[numDay - 1][1].equals("LLLL")) {
 					if(hourProp.compareTo(hourNext) <= 0) {
 						return true;
@@ -1174,6 +1220,30 @@ public class CustomerServiceAgent extends Agent{
 				}
 			}
 			return hab;
+		}
+	}
+
+	private class awaitAbsentConfirmation extends CyclicBehaviour{
+
+		private static final long serialVersionUID = 1L;
+		private MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchConversationId("absent-change-accepted"),
+				MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL));
+
+		@Override
+		public void action() {
+
+			ACLMessage msg = myAgent.receive(mt);
+			if(msg != null) {
+				try {
+					Object[] newSol = (Object[]) msg.getContentObject();
+					mySchudule = (String[][]) newSol[0];
+					//System.out.println(name + " received confirmation and updated the schedule.");
+				} catch (UnreadableException e) {
+					e.printStackTrace();
+				}
+			}else {
+				block();
+			}
 		}
 	}
 }

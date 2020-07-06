@@ -56,7 +56,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 	private Airline myAgent;
 	private DefaultTableModel model;
 
-	public AirlineGUI(Airline a, ArrayList<String[][]> schedule, double FO, double wellnessFO, double numRoutes, double maxDemand, double unatendedDemand) {
+	public AirlineGUI(Airline a, ArrayList<String[][]> schedule, double FO, double wellnessFO, double numRoutes, double maxDemand, double unatendedDemand, double variability) {
 
 		myAgent = a;
 		menu = new JFrame();
@@ -146,7 +146,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		add(lblFOVariability);
 
 		txtVariability = new JTextField();
-		txtVariability.setText("" + 0);
+		txtVariability.setText("" + df.format(variability));
 		txtVariability.setBounds(336, 246, 167, 26);
 		txtVariability.setColumns(10);
 		txtVariability.setEditable(false);
@@ -275,14 +275,13 @@ public class AirlineGUI extends JPanel implements WindowListener{
 	}
 
 	public void displayFO(ArrayList<String[][]> timeslots, double schedulingFO, double wellnessFO, double nRoutes,
-			double maxDemand, double unatendedDemand) {
+			double maxDemand, double unatendedDemand, double variability) {
 
 		long totalFO = 0;
 		tblAgentes.removeAll();
-		tblAgentes.repaint();
 
 		DecimalFormat df = new DecimalFormat("#.##");
-		totalFO = (long) ((schedulingFO + wellnessFO) * 10000 + nRoutes);
+		totalFO = (long) ((schedulingFO + wellnessFO) * 10000 + nRoutes + variability);
 		txtFuncionObjetivo.setEditable(true);
 		txtFuncionObjetivo.setText("" + df.format(totalFO));
 		txtFuncionObjetivo.setEditable(false);
@@ -302,6 +301,10 @@ public class AirlineGUI extends JPanel implements WindowListener{
 		txtFuncionObjetivoBienestar.setEditable(true);
 		txtFuncionObjetivoBienestar.setText("" + df.format(wellnessFO));
 		txtFuncionObjetivoBienestar.setEditable(false);
+		
+		txtVariability.setEditable(true);
+		txtVariability.setText("" + df.format(variability));
+		txtVariability.setEditable(false);
 
 		txtRoutes.setEditable(true);
 		txtRoutes.setText("" + df.format(nRoutes));
@@ -317,8 +320,8 @@ public class AirlineGUI extends JPanel implements WindowListener{
 			view = new Vector<String>();
 			view.add("Agent " + (i + 1));
 			String[][] sch = timeslots.get(i);
-			String hour = sch[0][0].split(" ")[1];
 			for(int j = 0; j < 8; j++) {
+				String hour = sch[j][0].split(" ")[1];
 				if(sch[j][1].equalsIgnoreCase("LLLL")) {
 					view.add("Libre");
 				}else {
@@ -335,7 +338,7 @@ public class AirlineGUI extends JPanel implements WindowListener{
 			model.addRow((Vector<?>) actual);
 		}
 		tblAgentes.setModel(model);		
-
+		tblAgentes.repaint();
 	}
 
 }

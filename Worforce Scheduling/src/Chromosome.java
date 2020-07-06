@@ -19,6 +19,7 @@ public class Chromosome implements Serializable{
 	private double unatendedDemandB;
 	private double unatendedDemandC;
 	private double maxDemand;
+	private double variability;
 	private boolean foCalculated;
 	
 	public Chromosome(int numAgents) {
@@ -27,6 +28,7 @@ public class Chromosome implements Serializable{
 		this.FO = 0;
 		this.fitness = 0;
 		this.fatherRate = 0;
+		this.setVariability(0);
 		this.setUnatendedDemandA(0);
 		this.setUnatendedDemandB(0);
 		this.setUnatendedDemandC(0);
@@ -58,12 +60,23 @@ public class Chromosome implements Serializable{
 		this.unatendedDemandA = 0;
 		this.unatendedDemandB = 0;
 		this.unatendedDemandC = 0;
+		this.variability = 0;
 
 		for(String[][] actual: timesolts) {
+			ArrayList<Double> var = new ArrayList<Double>();
 			for(int i = 0; i < 8; i++) {
 				String day = actual[i][0].split(" ")[0];
 				String initialHour = actual[i][0].split(" ")[1];
 				String activity = actual[i][1];
+				if(!activity.equalsIgnoreCase("LLLL")) {
+					LocalTime h = LocalTime.of(Integer.parseInt(initialHour.split(":")[0]), Integer.parseInt(initialHour.split(":")[1]));
+					double ho = (double) h.getHour();
+					int min = h.getMinute();
+					if(min == 30) {
+						ho += 0.5;
+					}					
+					var.add(ho);
+				}
 				String initBreak = pBreaks.get(initialHour);
 				HashMap<String, String> labor = getTimeSlotsAgent(day, initialHour, activity, initBreak);
 				for(Map.Entry<String, String> entry: labor.entrySet()) {
@@ -89,6 +102,9 @@ public class Chromosome implements Serializable{
 					}
 				}
 			}
+			
+			this.variability += variabilityAgent(var);
+			
 		}
 
 		for(Map.Entry<String, Integer> maxAct: max.entrySet()) {
@@ -122,6 +138,25 @@ public class Chromosome implements Serializable{
 		this.fitness = 1 / this.FO;
 		this.setFoCalculated(true);
 
+	}
+	
+	public double variabilityAgent(ArrayList<Double> hours) {
+		
+		double var = 0;
+		double prom = 0;
+		double sum = 0;
+		
+		for(int i = 0; i < hours.size(); i++) {
+			sum += hours.get(i);
+		}
+		prom = sum / hours.size();
+		
+		for(int i = 0; i < hours.size(); i++) {
+			var += Math.abs(hours.get(i) - prom);
+		}
+
+		return var;
+		
 	}
 
 	public HashMap<String, String> getTimeSlotsAgent(String day, String initialHour, String permutation, String initBreak) {
@@ -313,5 +348,13 @@ public class Chromosome implements Serializable{
 
 	public void setUnatendedDemandC(double unatendedDemandC) {
 		this.unatendedDemandC = unatendedDemandC;
+	}
+
+	public double getVariability() {
+		return variability;
+	}
+
+	public void setVariability(double variability) {
+		this.variability = variability;
 	}
 }
