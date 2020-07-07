@@ -3,10 +3,14 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.swing.text.Position;
+
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
@@ -32,7 +36,18 @@ public class TransportSupervisor extends Agent {
 	private Double[][] distances;
 	private AID airline;
 	private AID[] agents;
-
+	private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesGoing = new HashMap<String, ArrayList<ArrayList<Integer>>>();
+	private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesReturn = new HashMap<String, ArrayList<ArrayList<Integer>>>();
+	private double FO = 0;
+	private double N = 0; //Employees that the airline transport
+	private double NRoutes = 0; //How many vehicles i have
+	private double efficiency = 0;
+	private double promAdditionalKm = 0;
+	private double promIdealKm = 0;
+	private double totalKmAgent = 0;
+	private double additionalKm = 0;
+	private double idealKm = 0;
+	private double indirectRoutes = 0;
 	@Override
 	protected void setup(){
 		ida  = new HashMap<String, ArrayList<Integer>>();
@@ -91,6 +106,7 @@ public class TransportSupervisor extends Agent {
 			fe.printStackTrace();
 		}
 		addBehaviour(new routingAgent());
+		addBehaviour(new solveAbsense());
 	}
 
 	public HashMap<String, ArrayList<Integer>> getIda() {
@@ -137,6 +153,8 @@ public class TransportSupervisor extends Agent {
 			ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
 				try {
+					ida.clear();
+					vuelta.clear();
 					//Quitar el tema de scheduling
 					Object[] params = (Object[]) msg.getContentObject();
 					setTimeSolt((ArrayList<String[][]>) params[1]);
@@ -270,8 +288,6 @@ public class TransportSupervisor extends Agent {
 		private int msgReceived = 0;
 		private HashMap<String, ArrayList<Integer>> leadersGoing;
 		private HashMap<String, ArrayList<Integer>> leadersReturn;
-		private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesGoing = new HashMap<String, ArrayList<ArrayList<Integer>>>();
-		private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesReturn = new HashMap<String, ArrayList<ArrayList<Integer>>>();
 
 
 		@Override
@@ -281,6 +297,7 @@ public class TransportSupervisor extends Agent {
 				//Generate leaders
 				leadersGoing = GenerateLeadersGoing();
 				leadersReturn = GenerateLeadersReturn();
+				cantLeaders = 0;
 				step = 1;
 				break;
 			case 1:
@@ -289,6 +306,7 @@ public class TransportSupervisor extends Agent {
 				sendMessageNonLeadersReturn();
 				sendMessageLeadersGoing();
 				sendMessageLeadersReturn();
+				msgReceived = 0;
 				step = 2;
 				break;
 			case 2:
@@ -348,7 +366,7 @@ public class TransportSupervisor extends Agent {
 			case 4:
 				calculateRoutingFO();
 				System.out.println("Routing algorithm finished...");
-				block();
+				step = 5;
 				break;
 			default:
 				break;
@@ -363,16 +381,6 @@ public class TransportSupervisor extends Agent {
 
 		private double calculateRoutingFO() {
 
-			double FO = 0;
-			double N = 0; //Employees that the airline transport
-			double NRoutes = 0; //How many vehicles i have
-			double efficiency = 0;
-			double promAdditionalKm = 0;
-			double promIdealKm = 0;
-			double totalKmAgent = 0;
-			double additionalKm = 0;
-			double idealKm = 0;
-			double indirectRoutes = 0;
 
 			for(Map.Entry<String, ArrayList<ArrayList<Integer>>> allVehiclesGoing: vehiclesGoing.entrySet()) {
 				ArrayList<ArrayList<Integer>> vehicles = allVehiclesGoing.getValue();
@@ -421,46 +429,6 @@ public class TransportSupervisor extends Agent {
 			}
 			return FO;
 
-		}
-
-		private double calculateKmAgentGoing(int idAgent, ArrayList<Integer> vehicle) {
-
-			double km = 0;
-			boolean start = false;
-
-			if(vehicle.size() == 1) {
-				return distances[idAgent][0];
-			}
-
-			for(int i = 0; i < vehicle.size() - 1; i++) {
-				if(vehicle.get(i) == idAgent) {
-					start = true;
-				}
-				if(start) {
-					km += distances[vehicle.get(i)][vehicle.get(i + 1)];
-				}
-			}
-
-			km += distances[vehicle.get(vehicle.size() - 1)][0];
-
-			return km;
-		}
-
-		private double calculateKmAgentReturn(int idAgent, ArrayList<Integer> vehicle) {
-
-			double km = 0;
-
-			if(vehicle.size() == 1) {
-				return distances[0][idAgent];
-			}
-
-			km += distances[0][vehicle.get(0)];
-
-			for(int i = 0; i < vehicle.indexOf(idAgent); i++) {
-				km += distances[vehicle.get(i)][vehicle.get(i + 1)];
-			}
-
-			return km;
 		}
 
 		private HashMap<String, ArrayList<Integer>> GenerateLeadersGoing(){
@@ -663,5 +631,295 @@ public class TransportSupervisor extends Agent {
 			return null;
 		}
 	}
+	private class solveAbsense extends Behaviour{
 
+		private static final long serialVersionUID = 1L;
+		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("route-absense"),
+				MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
+		ArrayList<Object[]> switches;
+		int agent2;
+		int agent1;
+		String dayHour;
+		String dayHour2;
+		int step = 0;
+		@SuppressWarnings("unchecked")
+		public void action() {
+			switch(step) {
+			case 0:
+				ACLMessage msg = myAgent.receive(mt);
+				if(msg!=null) {
+					try {
+						switches = (ArrayList<Object[]>) msg.getContentObject();
+					} catch (UnreadableException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					step=1;
+				}else {
+					block();
+				}
+			break;
+			
+			case 1:
+				for(Object[] actual:switches) {
+					agent2 = (int) actual[0];
+					dayHour = (String) actual[1];
+					agent1 = (int) actual[2];
+					LocalTime hourInit = LocalTime.of(Integer.parseInt(dayHour.split(":")[0]),Integer.parseInt(dayHour.split(":")[1]));
+					LocalTime hourFin = hourInit.plusHours(9);
+					if(hourFin.isBefore(LocalTime.of(00, 00)) && hourFin.isAfter(hourInit)) {
+						dayHour2 = dayHour.split(" ")[0] + hourFin.toString();
+					}else {
+						dayHour2 = returnNextDay(dayHour.split(" ")[0]) + hourFin.toString();
+					}
+					if(vehiclesGoing.containsKey(dayHour)) {
+						//Modificar ida
+						System.out.println("Ruteare ida "+dayHour);
+						modifyGoing(agent1, dayHour, agent2);
+					}
+					if(vehiclesReturn.containsKey(dayHour2)) {
+						//Modificar vuelta
+						System.out.println("Ruteare vuelta "+dayHour2);
+						modifyReturn(agent1, dayHour, agent2);
+					}
+				}
+				step = 2;
+			break;
+			
+			case 2:
+				//Enviar el agente airline
+				block();
+			break;
+			
+			default:
+				block();
+			break;
+			}
+			
+		}
+		@Override
+		public boolean done() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+		
+		private void modifyGoing(int agent1, String dayHour, int agent2) {
+			ArrayList<ArrayList<Integer>> vehicles = vehiclesGoing.get(dayHour);
+			ArrayList<Integer> carro = null;
+			ArrayList<Integer> carroDelete = null;
+			//Eliminar al agente enfermito
+			for(ArrayList<Integer> car:vehicles) {
+				if(car.contains(agent1)) {
+					//Caso 1: Si se va solito :(
+					if(car.size()==1) {
+						System.out.println("El agente "+(agent2 + 1)+ "ahora se va solito");
+						car.set(0, agent2);
+					}else if(car.size()>1) {
+						car.remove(agent1);
+						carro = VMCTemporal(car, agent2);
+						if(carro!=null) {
+							carroDelete = car;
+							break;
+						}
+					}
+					
+				}
+			}
+			
+			if(carroDelete==null) {
+				System.out.println("Agent "+(agent2+1)+" se va solo");
+				ArrayList<Integer> alone = new ArrayList<Integer>();
+				alone.add(agent2);
+				vehicles.add(alone);
+			}else {
+				System.out.println("Agent "+(agent2+1)+" no se va solo. Se va en el carro: ");
+				for(int i=0; i < carro.size();i++) {
+					System.out.print(carro.get(i)+" ");
+				}
+				vehicles.remove(carroDelete);
+				vehicles.add(carro);
+			}
+			
+		}
+		private void modifyReturn(int agent1, String dayHour, int agent2) {
+			ArrayList<ArrayList<Integer>> vehicles = vehiclesReturn.get(dayHour);
+			ArrayList<Integer> carro = null;
+			ArrayList<Integer> carroDelete = null;
+			//Eliminar al agente enfermito
+			for(ArrayList<Integer> car:vehicles) {
+				if(car.contains(agent1)) {
+					//Caso 1: Si se va solito :(
+					if(car.size()==1) {
+						System.out.println("El agente "+(agent2 + 1)+ "ahora se va solito");
+						car.set(0, agent2);
+					}else if(car.size()>1) {
+						car.remove(agent1);
+						carro = VMCTemporalR(car, agent2);
+						if(carro!=null) {
+							carroDelete = car;
+							break;
+						}
+					}
+					
+				}
+			}
+			
+			if(carroDelete==null) {
+				System.out.println("Agent "+(agent2+1)+" se va solo");
+				ArrayList<Integer> alone = new ArrayList<Integer>();
+				alone.add(agent2);
+				vehicles.add(alone);
+			}else {
+				System.out.println("Agent "+(agent2+1)+" no se va solo. Se va en el carro: ");
+				for(int i=0; i < carro.size();i++) {
+					System.out.print(carro.get(i)+" ");
+				}
+				vehicles.remove(carroDelete);
+				vehicles.add(carro);
+			}
+			
+		}
+		
+		public ArrayList<Integer> VMCTemporal(ArrayList<Integer> car, int agent){
+			@SuppressWarnings("unchecked")
+			ArrayList<Integer> possibleCar = (ArrayList<Integer>) car.clone();
+			ArrayList<Integer> response = new ArrayList<Integer>();
+			possibleCar.add(agent);
+			int leader = leaderG(possibleCar);
+			possibleCar.remove(leader);
+			response.add(leader);
+			double cercano;
+			int agentCercano;
+			double distance;
+			while(response.size()!= car.size()+1) {
+				cercano = 100000;
+				agentCercano = -1;
+				for(Integer actual:possibleCar) {
+					if(cercano>distances[response.get(response.size()-1)][actual]) {
+						cercano = distances[response.get(response.size()-1)][actual];
+						agentCercano = actual;
+					}
+				}
+				possibleCar.remove(agentCercano);
+				response.add(agentCercano);
+			}
+			//Evaluar el promedio del nuevo agente
+			distance = calculateKmAgentGoing(agent, response);
+			if(distance <= promAdditionalKm) {
+				return response;
+			}else {
+				return null;
+			}
+			
+		}
+		public ArrayList<Integer> VMCTemporalR(ArrayList<Integer> car, int agent){
+			@SuppressWarnings("unchecked")
+			ArrayList<Integer> possibleCar = (ArrayList<Integer>) car.clone();
+			ArrayList<Integer> response = new ArrayList<Integer>();
+			possibleCar.add(agent);
+			int leader = leaderR(possibleCar);
+			possibleCar.remove(leader);
+			response.add(leader);
+			double cercano;
+			int agentCercano;
+			double distance;
+			while(response.size()!= car.size()+1) {
+				cercano = 100000;
+				agentCercano = -1;
+				for(Integer actual:possibleCar) {
+					if(cercano>distances[response.get(response.size()-1)][actual]) {
+						cercano = distances[response.get(response.size()-1)][actual];
+						agentCercano = actual;
+					}
+				}
+				possibleCar.remove(agentCercano);
+				response.add(agentCercano);
+			}
+			//Evaluar el promedio del nuevo agente
+			distance = calculateKmAgentReturn(agent, response);
+			if(distance <= promAdditionalKm) {
+				return response;
+			}else {
+				return null;
+			}
+			
+		}
+		
+		public int leaderG(ArrayList<Integer> car){
+			int leader = -1;
+			double menor = 0;
+			for(Integer actual:car) {
+				if(menor<distances[0][actual]) {
+					leader = actual;
+					menor = distances[0][actual];
+				}
+			}
+			return leader;
+		}
+		public int leaderR(ArrayList<Integer> car){
+			int leader = -1;
+			double menor = 100000000;
+			for(Integer actual:car) {
+				if(menor>distances[0][actual]) {
+					leader = actual;
+					menor = distances[0][actual];
+				}
+			}
+			return leader;
+		}
+		
+		public String returnNextDay(String day) {
+			
+			if(day.equalsIgnoreCase("Mar")) return "Mie";
+			if(day.equalsIgnoreCase("Mie")) return "Jue";
+			if(day.equalsIgnoreCase("Jue")) return "Vie";
+			if(day.equalsIgnoreCase("Vie")) return "Sab";
+			if(day.equalsIgnoreCase("Sab")) return "Dom";
+			if(day.equalsIgnoreCase("Dom")) return "Lun";
+			if(day.equalsIgnoreCase("Lun")) return "Mar2";
+			if(day.equalsIgnoreCase("Mar2")) return "Mie2";
+			
+			return "";
+		}
+		
+	}
+	private double calculateKmAgentGoing(int idAgent, ArrayList<Integer> vehicle) {
+
+		double km = 0;
+		boolean start = false;
+
+		if(vehicle.size() == 1) {
+			return distances[idAgent][0];
+		}
+
+		for(int i = 0; i < vehicle.size() - 1; i++) {
+			if(vehicle.get(i) == idAgent) {
+				start = true;
+			}
+			if(start) {
+				km += distances[vehicle.get(i)][vehicle.get(i + 1)];
+			}
+		}
+
+		km += distances[vehicle.get(vehicle.size() - 1)][0];
+
+		return km;
+	}
+
+	private double calculateKmAgentReturn(int idAgent, ArrayList<Integer> vehicle) {
+
+		double km = 0;
+
+		if(vehicle.size() == 1) {
+			return distances[0][idAgent];
+		}
+
+		km += distances[0][vehicle.get(0)];
+
+		for(int i = 0; i < vehicle.indexOf(idAgent); i++) {
+			km += distances[vehicle.get(i)][vehicle.get(i + 1)];
+		}
+
+		return km;
+	}
 }

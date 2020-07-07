@@ -3,6 +3,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import jade.core.AID;
 import jade.core.Agent;
@@ -155,7 +156,7 @@ public class Airline extends Agent{
 		private static final long serialVersionUID = 1L;
 		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("absence-result"),
 				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
-
+		ArrayList<Object[]> relevos;
 		@SuppressWarnings("unchecked")
 		@Override
 		public void action() {
@@ -171,7 +172,17 @@ public class Airline extends Agent{
 					maxDemand = (Double) args[2];
 					unatendedDemand = (Double) args[3];
 					variability = (Double) args[4];
-					myInterface.displayFO(timeslots, schedulingFO, wellnessFO, nRoutes, maxDemand, unatendedDemand, variability);
+					relevos = (ArrayList<Object[]>) args[5];
+					ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
+					request.setConversationId("route-absense");
+					request.addReceiver(transport);
+					System.out.println(relevos.size());
+					try {
+						request.setContentObject(relevos);
+						myAgent.send(request);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
 				} catch (UnreadableException e) {
 					e.printStackTrace();
 				}

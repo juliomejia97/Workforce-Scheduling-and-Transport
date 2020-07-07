@@ -997,6 +997,7 @@ public class CustomerServiceSupervisor extends Agent{
 		int step = 0;
 		String[][] changeAgent;
 		ArrayList<Object[]> info;
+		ArrayList<Object[]> newAgents =  new ArrayList<Object[]>();
 		int posAgent;
 		int numDay;
 		int repliesCnt;
@@ -1076,7 +1077,6 @@ public class CustomerServiceSupervisor extends Agent{
 			case 3:
 				if(agents.size() > 0) {
 					AID agentConfirmed = null;
-					//System.out.println("I have " + agents.size() + " proposes");
 					sortCap();
 					System.out.println("The agent " + (((int) agents.get(0)[0]) + 1) + " is going to cover the shift with the slots: " + agents.get(0)[3]);
 					int idAgent = (int) agents.get(0)[0];
@@ -1092,8 +1092,8 @@ public class CustomerServiceSupervisor extends Agent{
 							agentConfirmed = serviceAgents[i];
 						}
 					}
-					
-					//System.out.println("Sending confirmation to agent " + (idAgent + 1));
+					Object[] relevo = {idAgent,dayHour, posAgent};
+					newAgents.add(relevo);
 					ACLMessage msgConfirm = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
 					msgConfirm.setConversationId("absent-change-accepted");
 					Object[] params = {sol};
@@ -1136,7 +1136,7 @@ public class CustomerServiceSupervisor extends Agent{
 						bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandB() + 
 						bestChromosomes.get(bestChromosomes.size() - 1).getUnatendedDemandC();
 				variability = bestChromosomes.get(bestChromosomes.size() - 1).getVariability();
-				Object[] params = {timeslots,bestFo, max, unatended, variability};
+				Object[] params = {timeslots,bestFo, max, unatended, variability, newAgents};
 				try {
 					cfp.setContentObject(params);
 				} catch (IOException e) {
@@ -1146,6 +1146,7 @@ public class CustomerServiceSupervisor extends Agent{
 				for(int i=0; i < serviceAgents.length; i++) {
 					sendDecision(serviceAgents[i]);
 				}
+				newAgents.clear();
 				step = 6;
 				break;
 			default:
