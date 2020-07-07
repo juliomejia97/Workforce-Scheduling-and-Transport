@@ -1092,7 +1092,7 @@ public class CustomerServiceSupervisor extends Agent{
 							agentConfirmed = serviceAgents[i];
 						}
 					}
-					Object[] relevo = {idAgent,dayHour, posAgent};
+					Object[] relevo = {idAgent, dayHour, posAgent};
 					newAgents.add(relevo);
 					ACLMessage msgConfirm = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
 					msgConfirm.setConversationId("absent-change-accepted");

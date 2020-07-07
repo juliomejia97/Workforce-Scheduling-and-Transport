@@ -3,7 +3,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import jade.core.AID;
 import jade.core.Agent;
@@ -176,7 +175,6 @@ public class Airline extends Agent{
 					ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
 					request.setConversationId("route-absense");
 					request.addReceiver(transport);
-					System.out.println(relevos.size());
 					try {
 						request.setContentObject(relevos);
 						myAgent.send(request);
