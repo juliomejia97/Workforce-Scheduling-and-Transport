@@ -688,7 +688,7 @@ public class TransportSupervisor extends Agent {
 						System.out.println("Changing agents on going transportation on:  " + dayHour);
 						modifyGoing(agent1, dayHour, agent2);
 					}
-					
+
 					if(vehiclesReturn.containsKey(dayHour2)) {
 						System.out.println("Changing agents on return transportation on:  " + dayHour);
 						modifyReturn(agent1, dayHour2, agent2);
@@ -714,7 +714,7 @@ public class TransportSupervisor extends Agent {
 		}
 
 		private double updateFO() {
-			
+
 			NRoutes = 0;
 			totalKmAgent = 0;
 			additionalKm = 0;
@@ -769,7 +769,7 @@ public class TransportSupervisor extends Agent {
 		}
 
 		private void modifyGoing(int agent1, String dayHour, int agent2) {
-			
+
 			boolean size = false;
 			ArrayList<ArrayList<Integer>> vehicles = vehiclesGoing.get(dayHour);
 			ArrayList<Integer> carro = null;
@@ -783,19 +783,25 @@ public class TransportSupervisor extends Agent {
 							System.out.println("The Agent " + (agent2 + 1) + " will travel alone.");
 							size = true;
 							car.set(0, agent2 + 1);
-						}else if(car.size() > 1) {
-							carro = VMCTemporal(car, agent2 + 1, agent1 + 1);
-							if(carro != null) {
-								carroDelete = car;
-								break;
-							}
+						}
+					}
+					if(car.size() > 0 && !size && !car.contains((Integer) (agent2+1))) {
+						carro = VMCTemporal(car, agent2 + 1, agent1 + 1);
+						if(carro != null) {
+							carroDelete = car;
+							break;
 						}
 					}
 				}
 			}
 
-			if(carroDelete == null && !size) {
+			//Remove absent agent
+			if(!size) {
 				absCar.remove((Integer) (agent1+1));
+			}
+
+			if(carroDelete == null && !size) {
+				System.out.println("The Agent " + (agent2 + 1) + " will travel alone. Because the system did not find good option");
 				ArrayList<Integer> alone = new ArrayList<Integer>();
 				alone.add(agent2 + 1);
 				vehicles.add(alone);
@@ -807,12 +813,12 @@ public class TransportSupervisor extends Agent {
 				vehicles.remove(carroDelete);
 				vehicles.add(carro);
 			}
-			
+
 			vehiclesGoing.put(dayHour, vehicles);
 
 		}
 		private void modifyReturn(int agent1, String dayHour, int agent2) {
-			
+
 			boolean size = false;
 			ArrayList<ArrayList<Integer>> vehicles = vehiclesReturn.get(dayHour);
 			ArrayList<Integer> carro = null;
@@ -826,19 +832,25 @@ public class TransportSupervisor extends Agent {
 							System.out.println("The Agent " + (agent2 + 1) + " will travel alone.");
 							size = true;
 							car.set(0, agent2 + 1);
-						}else if(car.size() > 1) {
-							carro = VMCTemporalR(car, agent2 + 1, agent1 + 1);
-							if(carro!=null) {
-								carroDelete = car;
-								break;
-							}
+						}
+					}
+					if(car.size() > 0 && !size && !car.contains((Integer) (agent2+1))) {
+						carro = VMCTemporalR(car, agent2 + 1, agent1 + 1);
+						if(carro!=null) {
+							carroDelete = car;
+							break;
 						}
 					}
 				}
 			}
 
-			if(carroDelete == null && !size) {
+			//Remove absent agent
+			if(!size) {
 				absCar.remove((Integer) (agent1+1));
+			}
+
+			if(carroDelete == null && !size) {
+				System.out.println("The Agent " + (agent2 + 1) + " will travel alone. Because the system did not find good option");
 				ArrayList<Integer> alone = new ArrayList<Integer>();
 				alone.add(agent2 + 1);
 				vehicles.add(alone);
@@ -850,24 +862,28 @@ public class TransportSupervisor extends Agent {
 				vehicles.remove(carroDelete);
 				vehicles.add(carro);
 			}
-			
+
 			vehiclesReturn.put(dayHour, vehicles);
 
 		}
 
 		public ArrayList<Integer> VMCTemporal(ArrayList<Integer> car, int agent, int agentRemove){
 			@SuppressWarnings("unchecked")
+			int cant = 0;
 			ArrayList<Integer> possibleCar = (ArrayList<Integer>) car.clone();
 			ArrayList<Integer> response = new ArrayList<Integer>();
-			possibleCar.remove((Integer) agentRemove);
+			if(possibleCar.contains((Integer) agentRemove)) {
+				possibleCar.remove((Integer) agentRemove);
+			}
 			possibleCar.add(agent);
+			cant = possibleCar.size();
 			int leader = leaderG(possibleCar);
 			possibleCar.remove((Integer) leader);
 			response.add(leader);
 			double cercano;
 			int agentCercano;
 			double distance;
-			do {
+			while(response.size() != cant){
 				cercano = 100000;
 				agentCercano = -1;
 				for(Integer actual:possibleCar) {
@@ -878,7 +894,7 @@ public class TransportSupervisor extends Agent {
 				}
 				possibleCar.remove((Integer) agentCercano);
 				response.add(agentCercano);
-			}while(response.size() != car.size());
+			}
 			//Evaluar el promedio del nuevo agente
 			distance = calculateKmAgentGoing(agent, response);
 			if(distance <= promAdditionalKm) {
@@ -890,17 +906,21 @@ public class TransportSupervisor extends Agent {
 		}
 		public ArrayList<Integer> VMCTemporalR(ArrayList<Integer> car, int agent, int agentRemove){
 			@SuppressWarnings("unchecked")
+			int cant = 0;
 			ArrayList<Integer> possibleCar = (ArrayList<Integer>) car.clone();
 			ArrayList<Integer> response = new ArrayList<Integer>();
-			possibleCar.remove((Integer) agentRemove);
+			if(possibleCar.contains((Integer) agentRemove)) {
+				possibleCar.remove((Integer) agentRemove);
+			}
 			possibleCar.add(agent);
+			cant = possibleCar.size();
 			int leader = leaderR(possibleCar);
 			possibleCar.remove((Integer) leader);
 			response.add(leader);
 			double cercano;
 			int agentCercano;
 			double distance;
-			do {
+			while(response.size() != cant){
 				cercano = 100000;
 				agentCercano = -1;
 				for(Integer actual:possibleCar) {
@@ -911,7 +931,7 @@ public class TransportSupervisor extends Agent {
 				}
 				possibleCar.remove((Integer) agentCercano);
 				response.add(agentCercano);
-			}while(response.size() != car.size());
+			}
 			//Evaluar el promedio del nuevo agente
 			distance = calculateKmAgentReturn(agent, response);
 			if(distance <= promAdditionalKm) {
