@@ -452,8 +452,6 @@ public class CustomerServiceAgent extends Agent{
 					lst.add(Integer.parseInt(closest.getName().split("@")[0].split(" ")[1]));
 					agents.remove(closest);
 				}
-			} else {
-				//System.out.println("El " + name + " se va a ir solo");
 			}
 
 			return lst;
