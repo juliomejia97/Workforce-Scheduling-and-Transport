@@ -52,15 +52,6 @@ public class TransportSupervisorGUI extends JPanel {
 		menu.getContentPane().setLayout(new BorderLayout());
 		menu.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		String[] dataHeader = {"Vehicle Id", "Day", "Hour", "Passenger 1 Id", "Passenger 2 Id", "Passenger 3 Id", "Passenger 4 Id"};
-		Vector<String> header = new Vector<String>(Arrays.asList(dataHeader));
-
-		Vector<String> viewIda = new Vector<String>();
-		Vector<List<String>> agentDataIda = new Vector<List<String>>();
-
-		Vector<String> viewVuelta = new Vector<String>();
-		Vector<List<String>> agentDataVuelta = new Vector<List<String>>();
-
 		DecimalFormat df = new DecimalFormat("#.##");		
 
 		setBackground(Color.BLACK);
@@ -80,8 +71,7 @@ public class TransportSupervisorGUI extends JPanel {
 		lblFOTotal.setBounds(177, 73, 100, 26);
 		add(lblFOTotal);
 
-		txtFuncionObjetivo = new JTextField();
-		txtFuncionObjetivo.setText("" + df.format(promAdditional / promIdeal));
+		txtFuncionObjetivo = new JTextField("" + df.format(0));
 		txtFuncionObjetivo.setBounds(336, 76, 167, 26);
 		txtFuncionObjetivo.setColumns(10);
 		txtFuncionObjetivo.setEditable(false);
@@ -93,8 +83,7 @@ public class TransportSupervisorGUI extends JPanel {
 		lblPenalization.setBounds(177, 110, 150, 26);
 		add(lblPenalization);
 
-		txtPenalization = new JTextField();
-		txtPenalization.setText("" + df.format((promAdditional / promIdeal) * 100));
+		txtPenalization = new JTextField("" + df.format(0));
 		txtPenalization.setBounds(336, 110, 167, 26);
 		txtPenalization.setColumns(10);
 		txtPenalization.setEditable(false);
@@ -106,8 +95,7 @@ public class TransportSupervisorGUI extends JPanel {
 		lblAditionalKm.setBounds(177, 144, 150, 26);
 		add(lblAditionalKm);
 
-		txtAditionalKm = new JTextField();
-		txtAditionalKm.setText("" + df.format(promAdditional));
+		txtAditionalKm = new JTextField("" + df.format(0));
 		txtAditionalKm.setBounds(336, 144, 167, 26);
 		txtAditionalKm.setColumns(10);
 		txtAditionalKm.setEditable(false);
@@ -119,8 +107,7 @@ public class TransportSupervisorGUI extends JPanel {
 		lblIdealDistance.setBounds(177, 178, 150, 26);
 		add(lblIdealDistance);
 
-		txtIdealDistance = new JTextField();
-		txtIdealDistance.setText("" + df.format(promIdeal));
+		txtIdealDistance = new JTextField("" + df.format(0));
 		txtIdealDistance.setBounds(336, 178, 167, 26);
 		txtIdealDistance.setColumns(10);
 		txtIdealDistance.setEditable(false);
@@ -132,8 +119,7 @@ public class TransportSupervisorGUI extends JPanel {
 		lblEfficiency.setBounds(177, 212, 150, 26);
 		add(lblEfficiency);
 
-		txtEfficiency = new JTextField();
-		txtEfficiency.setText("" + df.format(efficiency));
+		txtEfficiency = new JTextField("" + df.format(0));
 		txtEfficiency.setBounds(336, 212, 167, 26);
 		txtEfficiency.setColumns(10);
 		txtEfficiency.setEditable(false);
@@ -144,6 +130,66 @@ public class TransportSupervisorGUI extends JPanel {
 		lblIda.setForeground(Color.WHITE);
 		lblIda.setBounds(18, 240, 300, 26);
 		add(lblIda);
+
+		barraArrastreIda = new JScrollPane();
+		barraArrastreIda.setBounds(18, 270, 650, 120);
+		tblIda = new JTable();
+		barraArrastreIda.setViewportView(tblIda);
+		add(barraArrastreIda);
+
+		lblVuelta = new JLabel("Transportation from airport to households ");
+		lblVuelta.setFont(new Font("Tahoma", Font.PLAIN, 13));
+		lblVuelta.setForeground(Color.WHITE);
+		lblVuelta.setBounds(18, 430, 300, 26);
+		add(lblVuelta);
+
+		barraArrastreVuelta = new JScrollPane();
+		barraArrastreVuelta.setBounds(18, 450, 650, 120);
+		tblVuelta = new JTable();
+		barraArrastreVuelta.setViewportView(tblVuelta);
+		add(barraArrastreVuelta);
+
+		menu.getContentPane().add(this);
+		menu.setResizable(false);
+		menu.setVisible(true);
+
+	}
+
+	public void displayFO(HashMap<String, ArrayList<ArrayList<Integer>>> idas, HashMap<String, ArrayList<ArrayList<Integer>>> vueltas, double efficiency, double promAdditional, double promIdeal) {
+
+		DecimalFormat df = new DecimalFormat("#.##");	
+
+		tblIda.removeAll();
+		tblVuelta.removeAll();
+
+		txtFuncionObjetivo.setEditable(true);
+		txtFuncionObjetivo.setText("" + df.format(promAdditional / promIdeal));
+		txtFuncionObjetivo.setEditable(false);
+
+		txtPenalization.setEditable(true);
+		txtPenalization.setText("" + df.format((promAdditional / promIdeal) * 100));
+		txtPenalization.setEditable(false);
+
+		txtAditionalKm.setEditable(true);
+		txtAditionalKm.setText("" + df.format(promAdditional));
+		txtAditionalKm.setEditable(false);
+
+		txtIdealDistance.setEditable(true);
+		txtIdealDistance.setText("" + df.format(promIdeal));
+		txtIdealDistance.setEditable(false);
+
+		txtEfficiency.setEditable(true);
+		txtEfficiency.setText("" + df.format(efficiency));
+		txtEfficiency.setEditable(false);
+
+		String[] dataHeader = {"Vehicle Id", "Day", "Hour", "Passenger 1 Id", "Passenger 2 Id", "Passenger 3 Id", "Passenger 4 Id"};
+		Vector<String> header = new Vector<String>(Arrays.asList(dataHeader));
+
+		Vector<String> viewIda = new Vector<String>();
+		Vector<List<String>> agentDataIda = new Vector<List<String>>();
+
+		Vector<String> viewVuelta = new Vector<String>();
+		Vector<List<String>> agentDataVuelta = new Vector<List<String>>();
 
 		int idIda = 0;
 
@@ -221,39 +267,20 @@ public class TransportSupervisorGUI extends JPanel {
 			}
 		}
 
-		barraArrastreIda = new JScrollPane();
-		barraArrastreIda.setBounds(18, 270, 650, 120);
-		add(barraArrastreIda);
-		tblIda = new JTable();
-		barraArrastreIda.setViewportView(tblIda);
 		modelIda = new DefaultTableModel();
 		modelIda.setColumnIdentifiers(header);
 		for(List<String> actual:agentDataIda) {
 			modelIda.addRow((Vector<?>) actual);
 		}
 		tblIda.setModel(modelIda);
+		tblIda.repaint();
 
-		lblVuelta = new JLabel("Transportation from airport to households ");
-		lblVuelta.setFont(new Font("Tahoma", Font.PLAIN, 13));
-		lblVuelta.setForeground(Color.WHITE);
-		lblVuelta.setBounds(18, 430, 300, 26);
-		add(lblVuelta);
-
-		barraArrastreVuelta = new JScrollPane();
-		barraArrastreVuelta.setBounds(18, 450, 650, 120);
-		add(barraArrastreVuelta);
-		tblVuelta = new JTable();
-		barraArrastreVuelta.setViewportView(tblVuelta);
 		modelVuelta = new DefaultTableModel();
 		modelVuelta.setColumnIdentifiers(header);
 		for(List<String> actual:agentDataVuelta) {
 			modelVuelta.addRow((Vector<?>) actual);
 		}
 		tblVuelta.setModel(modelVuelta);
-
-		menu.getContentPane().add(this);
-		menu.setResizable(false);
-		menu.setVisible(true);
-
+		tblVuelta.repaint();
 	}
 }

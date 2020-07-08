@@ -1085,7 +1085,7 @@ public class CustomerServiceSupervisor extends Agent{
 					sol[numDay][0] = dayHour;
 					bestChromosomes.get(bestChromosomes.size() - 1).setSolutionToTimeslots(idAgent, sol);
 					bestChromosomes.get(bestChromosomes.size() - 1).calculateSchedulingFO(actA, actB, actC, breaks);
-					
+
 					for(int i = 0; i < serviceAgents.length; i++) {
 						int myId = Integer.parseInt(serviceAgents[i].getName().split("@")[0].split(" ")[1]);
 						if(myId == (idAgent + 1)) {
@@ -1104,14 +1104,14 @@ public class CustomerServiceSupervisor extends Agent{
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
-					
+
 				} else {
 					System.out.println("No agent can cover the absent agent. No proposes found");
 				}
 				cntAbsents++;
 				step = 4;
 				break;
-			
+
 			case 4:
 				if(cntAbsents == info.size()) {
 					step = 5;
@@ -1119,7 +1119,7 @@ public class CustomerServiceSupervisor extends Agent{
 					step = 1;
 				}
 				break;
-				
+
 			case 5:
 				ArrayList<String[][]> timeslots;
 				double bestFo;
@@ -1154,9 +1154,9 @@ public class CustomerServiceSupervisor extends Agent{
 			}
 
 		}
-		
+
 		public void sortCap() {	
-			
+
 			for(int i = 0; i < agents.size() - 1; i++) {
 				for(int j = i + 1; j < agents.size(); j++) {
 					Object[] infoI = agents.get(i);
@@ -1175,7 +1175,7 @@ public class CustomerServiceSupervisor extends Agent{
 					}
 				}
 			}	
-			
+
 		}
 
 		@Override

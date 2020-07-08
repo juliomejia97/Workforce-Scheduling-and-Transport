@@ -4,6 +4,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.ProfileImpl;
@@ -23,16 +25,22 @@ public class Airline extends Agent{
 
 	private static final long serialVersionUID = 1L;
 	private ContainerController container;
-	private AirlineGUI myInterface;
+	private AirlineGUI schedulingGUI;
+	private TransportSupervisorGUI transportGUI;
 	private AID transport;
 	private AID scheduler;
 	private ArrayList<String[][]> timeslots;
 	private double schedulingFO;
 	private double maxDemand;
 	private double unatendedDemand;
-	private double wellnessFO;
 	private double variability;
+	private double wellnessFO;
 	private double nRoutes;
+	private double efficiency;
+	private double promAdditionalKm;
+	private double promIdealKm;
+	private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesGoing;
+	private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesReturn;
 	@Override
 	protected void setup() {
 
@@ -82,19 +90,21 @@ public class Airline extends Agent{
 			fe.printStackTrace();
 		}
 
-		myInterface = new AirlineGUI(this, new ArrayList<String[][]>(), 0, 0, 0, 0, 0, 0);
+		schedulingGUI = new AirlineGUI(this, new ArrayList<String[][]>(), 0, 0, 0, 0, 0, 0);
+		transportGUI = new TransportSupervisorGUI(new HashMap<String, ArrayList<ArrayList<Integer>>>(), new HashMap<String, ArrayList<ArrayList<Integer>>>(), 0, 0, 0);
 		addBehaviour(new bestSchedule());
 		addBehaviour(new resultRouting());
 		addBehaviour(new peakDemandResult());
 		addBehaviour(new absenceResult());
+		addBehaviour(new resultAbsence());
 	}
 
 	public AirlineGUI getMyInterface() {
-		return myInterface;
+		return schedulingGUI;
 	}
 
 	public void setMyInterface(AirlineGUI myInterface) {
-		this.myInterface = myInterface;
+		this.schedulingGUI = myInterface;
 	}
 
 	public void peakDemand(String day, String hour, String activity, int increment) {
@@ -140,7 +150,7 @@ public class Airline extends Agent{
 					maxDemand = (Double) args[2];
 					unatendedDemand = (Double) args[3];
 					variability = (Double) args[4];
-					myInterface.displayFO(timeslots, schedulingFO, wellnessFO, nRoutes, maxDemand, unatendedDemand, variability);
+					schedulingGUI.displayFO(timeslots, schedulingFO, wellnessFO, nRoutes, maxDemand, unatendedDemand, variability);
 				} catch (UnreadableException e) {
 					e.printStackTrace();
 				}
@@ -259,15 +269,53 @@ public class Airline extends Agent{
 		private static final long serialVersionUID = 1L;
 		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("display"),
 				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+		@SuppressWarnings("unchecked")
 		@Override
 		public void action() {
 			ACLMessage msg = myAgent.receive(mt);
 			if(msg!=null) {
 				try {
 					Object[] params = (Object[]) msg.getContentObject();
-					wellnessFO = (double) params[0];
-					nRoutes = (double) params[1];
-					myInterface.displayFO(timeslots, schedulingFO, wellnessFO, nRoutes, maxDemand, unatendedDemand, variability);
+					vehiclesGoing = (HashMap<String, ArrayList<ArrayList<Integer>>>) params[0];
+					vehiclesReturn = (HashMap<String, ArrayList<ArrayList<Integer>>>) params[1];
+					efficiency = (double) params[2];
+					promAdditionalKm = (double) params[3];
+					promIdealKm = (double) params[4];
+					wellnessFO = (double) params[5];
+					nRoutes = (double) params[6];
+					schedulingGUI.displayFO(timeslots, schedulingFO, wellnessFO, nRoutes, maxDemand, unatendedDemand, variability);
+					transportGUI.displayFO(vehiclesGoing, vehiclesReturn, efficiency, promAdditionalKm, promIdealKm);
+				} catch (UnreadableException e) {
+					e.printStackTrace();
+				}
+
+			}else {
+				block();
+			}
+		}
+	}
+
+	private class resultAbsence extends CyclicBehaviour {
+
+		private static final long serialVersionUID = 1L;
+		MessageTemplate mt =MessageTemplate.and(MessageTemplate.MatchConversationId("update-absence-gui"),
+				MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+		@SuppressWarnings("unchecked")
+		@Override
+		public void action() {
+			ACLMessage msg = myAgent.receive(mt);
+			if(msg!=null) {
+				try {
+					Object[] params = (Object[]) msg.getContentObject();
+					vehiclesGoing = (HashMap<String, ArrayList<ArrayList<Integer>>>) params[0];
+					vehiclesReturn = (HashMap<String, ArrayList<ArrayList<Integer>>>) params[1];
+					efficiency = (double) params[2];
+					promAdditionalKm = (double) params[3];
+					promIdealKm = (double) params[4];
+					wellnessFO = (double) params[5];
+					nRoutes = (double) params[6];
+					schedulingGUI.displayFO(timeslots, schedulingFO, wellnessFO, nRoutes, maxDemand, unatendedDemand, variability);
+					transportGUI.displayFO(vehiclesGoing, vehiclesReturn, efficiency, promAdditionalKm, promIdealKm);
 				} catch (UnreadableException e) {
 					e.printStackTrace();
 				}
@@ -300,7 +348,7 @@ public class Airline extends Agent{
 					}
 					agentsState.add(selection);
 				}			
-				
+
 				for(int i = 0; i < cantAgentsAbsent; i++) {
 					isSelected = false;
 					isNotFree = true;
@@ -340,5 +388,13 @@ public class Airline extends Agent{
 		params[0] = day;
 		params[1] = agent;
 		return params;
+	}
+
+	public TransportSupervisorGUI getTransportGUI() {
+		return transportGUI;
+	}
+
+	public void setTransportGUI(TransportSupervisorGUI transportGUI) {
+		this.transportGUI = transportGUI;
 	}
 }

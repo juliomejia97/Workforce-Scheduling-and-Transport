@@ -413,12 +413,10 @@ public class TransportSupervisor extends Agent {
 			promIdealKm = idealKm / N;
 			FO = promAdditionalKm / promIdealKm;
 
-			new TransportSupervisorGUI(vehiclesGoing, vehiclesReturn, efficiency, promAdditionalKm, promIdealKm);
-
 			ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
 			cfp.setConversationId("display");
 			cfp.addReceiver(airline);
-			Object[] params = {FO, NRoutes};
+			Object[] params = {vehiclesGoing, vehiclesReturn, efficiency, promAdditionalKm, promIdealKm, FO, NRoutes};
 			try {
 				cfp.setContentObject(params);
 				myAgent.send(cfp);
@@ -686,15 +684,13 @@ public class TransportSupervisor extends Agent {
 						}
 					}
 
-					System.out.println("DAY HOUR: " + dayHour);
-					System.out.println("DAY HOUR 2: " + dayHour2);
-
 					if(vehiclesGoing.containsKey(dayHour)) {
-						System.out.println("Ruteare ida " + dayHour);
+						System.out.println("Changing agents on going transportation on:  " + dayHour);
 						modifyGoing(agent1, dayHour, agent2);
 					}
+					
 					if(vehiclesReturn.containsKey(dayHour2)) {
-						System.out.println("Ruteare vuelta " + dayHour2);
+						System.out.println("Changing agents on return transportation on:  " + dayHour);
 						modifyReturn(agent1, dayHour2, agent2);
 					}
 				}
@@ -702,11 +698,8 @@ public class TransportSupervisor extends Agent {
 				break;
 
 			case 2:
-				//Calcular FO
-				//Enviar la solución al airline
-				//Airline actuailice GUI
-				//NO VA MAS
-				block();
+				updateFO();
+				step = 3;
 				break;
 
 			default:
@@ -717,10 +710,66 @@ public class TransportSupervisor extends Agent {
 		}
 		@Override
 		public boolean done() {
-			return false;
+			return (step == 3);
+		}
+
+		private double updateFO() {
+			
+			NRoutes = 0;
+			totalKmAgent = 0;
+			additionalKm = 0;
+			idealKm = 0;
+			indirectRoutes = 0;
+
+			for(Map.Entry<String, ArrayList<ArrayList<Integer>>> allVehiclesGoing: vehiclesGoing.entrySet()) {
+				ArrayList<ArrayList<Integer>> vehicles = allVehiclesGoing.getValue();
+				for(ArrayList<Integer> vehicleDay: vehicles) {
+					NRoutes++;
+					indirectRoutes += vehicleDay.size() - 1;
+					for(Integer person: vehicleDay) {
+						N++;
+						totalKmAgent = calculateKmAgentGoing(person, vehicleDay);
+						additionalKm += totalKmAgent - distances[person][0];
+						idealKm += distances[person][0];
+					}
+				}
+			}
+
+			for(Map.Entry<String, ArrayList<ArrayList<Integer>>> allVehiclesReturn: vehiclesReturn.entrySet()) {
+				ArrayList<ArrayList<Integer>> vehicles = allVehiclesReturn.getValue();
+				for(ArrayList<Integer> vehicleDay: vehicles) {
+					NRoutes++;
+					indirectRoutes += vehicleDay.size() - 1;
+					for(Integer person: vehicleDay) {
+						N++;
+						totalKmAgent = calculateKmAgentReturn(person, vehicleDay);
+						additionalKm += totalKmAgent - distances[0][person];
+						idealKm += distances[0][person];
+					}
+				}
+			}
+
+			efficiency = N / NRoutes;
+			promAdditionalKm = additionalKm / indirectRoutes;
+			promIdealKm = idealKm / N;
+			FO = promAdditionalKm / promIdealKm;
+
+			ACLMessage cfp = new ACLMessage(ACLMessage.INFORM);
+			cfp.setConversationId("update-absence-gui");
+			cfp.addReceiver(airline);
+			Object[] params = {vehiclesGoing, vehiclesReturn, efficiency, promAdditionalKm, promIdealKm, FO, NRoutes};
+			try {
+				cfp.setContentObject(params);
+				myAgent.send(cfp);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return FO;
 		}
 
 		private void modifyGoing(int agent1, String dayHour, int agent2) {
+			
+			boolean size = false;
 			ArrayList<ArrayList<Integer>> vehicles = vehiclesGoing.get(dayHour);
 			ArrayList<Integer> carro = null;
 			ArrayList<Integer> carroDelete = null;
@@ -728,6 +777,8 @@ public class TransportSupervisor extends Agent {
 				for(Integer agents: car) {
 					if(agents == agent1 + 1) {
 						if(car.size() == 1) {
+							System.out.println("The Agent " + (agent2 + 1) + " will travel alone.");
+							size = true;
 							car.set(0, agent2 + 1);
 						}else if(car.size() > 1) {
 							carro = VMCTemporal(car, agent2 + 1, agent1 + 1);
@@ -740,12 +791,11 @@ public class TransportSupervisor extends Agent {
 				}
 			}
 
-			if(carroDelete == null) {
-				System.out.println("The Agent " + (agent2 + 1) + " will travel alone.");
+			if(carroDelete == null && !size) {
 				ArrayList<Integer> alone = new ArrayList<Integer>();
-				alone.add(agent2);
+				alone.add(agent2 + 1);
 				vehicles.add(alone);
-			}else {
+			}else if(carroDelete != null) {
 				System.out.println("The Agent " + (agent2 + 1) + " will travel with other passengers. The passengers are: ");
 				for(int i=0; i < carro.size(); i++) {
 					System.out.print(carro.get(i) + " ");
@@ -753,9 +803,13 @@ public class TransportSupervisor extends Agent {
 				vehicles.remove(carroDelete);
 				vehicles.add(carro);
 			}
+			
+			vehiclesGoing.put(dayHour, vehicles);
 
 		}
 		private void modifyReturn(int agent1, String dayHour, int agent2) {
+			
+			boolean size = false;
 			ArrayList<ArrayList<Integer>> vehicles = vehiclesReturn.get(dayHour);
 			ArrayList<Integer> carro = null;
 			ArrayList<Integer> carroDelete = null;
@@ -763,6 +817,8 @@ public class TransportSupervisor extends Agent {
 				for(Integer agents: car) {
 					if(agents == agent1 + 1) {
 						if(car.size() == 1) {
+							System.out.println("The Agent " + (agent2 + 1) + " will travel alone.");
+							size = true;
 							car.set(0, agent2 + 1);
 						}else if(car.size() > 1) {
 							carro = VMCTemporalR(car, agent2 + 1, agent1 + 1);
@@ -776,19 +832,20 @@ public class TransportSupervisor extends Agent {
 				}
 			}
 
-			if(carroDelete == null) {
-				System.out.println("The Agent " + (agent2 + 1) + " will travel alone.");
+			if(carroDelete == null && !size) {
 				ArrayList<Integer> alone = new ArrayList<Integer>();
-				alone.add(agent2);
+				alone.add(agent2 + 1);
 				vehicles.add(alone);
-			}else {
+			}else if(carroDelete != null) {
 				System.out.println("The Agent " + (agent2 + 1) + " will travel with other passengers. The passengers are: ");
-				for(int i=0; i < carro.size();i++) {
+				for(int i=0; i < carro.size(); i++) {
 					System.out.print(carro.get(i) + " ");
 				}
 				vehicles.remove(carroDelete);
 				vehicles.add(carro);
 			}
+			
+			vehiclesReturn.put(dayHour, vehicles);
 
 		}
 
@@ -804,7 +861,7 @@ public class TransportSupervisor extends Agent {
 			double cercano;
 			int agentCercano;
 			double distance;
-			while(response.size()!=car.size()+1) {
+			do {
 				cercano = 100000;
 				agentCercano = -1;
 				for(Integer actual:possibleCar) {
@@ -815,7 +872,7 @@ public class TransportSupervisor extends Agent {
 				}
 				possibleCar.remove((Integer) agentCercano);
 				response.add(agentCercano);
-			}
+			}while(response.size() != car.size());
 			//Evaluar el promedio del nuevo agente
 			distance = calculateKmAgentGoing(agent, response);
 			if(distance <= promAdditionalKm) {
@@ -837,7 +894,7 @@ public class TransportSupervisor extends Agent {
 			double cercano;
 			int agentCercano;
 			double distance;
-			while(response.size()!= car.size()+1) {
+			do {
 				cercano = 100000;
 				agentCercano = -1;
 				for(Integer actual:possibleCar) {
@@ -848,7 +905,7 @@ public class TransportSupervisor extends Agent {
 				}
 				possibleCar.remove((Integer) agentCercano);
 				response.add(agentCercano);
-			}
+			}while(response.size() != car.size());
 			//Evaluar el promedio del nuevo agente
 			distance = calculateKmAgentReturn(agent, response);
 			if(distance <= promAdditionalKm) {
