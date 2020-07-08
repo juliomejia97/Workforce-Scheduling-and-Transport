@@ -349,7 +349,7 @@ public class Airline extends Agent{
 					agentsState.add(selection);
 				}			
 
-				for(int i = 0; i < cantAgentsAbsent; i++) {
+				while(absents.size()<cantAgentsAbsent){
 					isSelected = false;
 					isNotFree = true;
 					infoAgent = null;

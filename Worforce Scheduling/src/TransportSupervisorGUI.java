@@ -152,13 +152,25 @@ public class TransportSupervisorGUI extends JPanel {
 		menu.getContentPane().add(this);
 		menu.setResizable(false);
 		menu.setVisible(true);
-
+		modelIda = new DefaultTableModel();
+		modelVuelta = new DefaultTableModel();
 	}
 
 	public void displayFO(HashMap<String, ArrayList<ArrayList<Integer>>> idas, HashMap<String, ArrayList<ArrayList<Integer>>> vueltas, double efficiency, double promAdditional, double promIdeal) {
 
 		DecimalFormat df = new DecimalFormat("#.##");	
-
+		
+		
+		if (modelIda.getRowCount() > 0) {
+		    for (int i = modelIda.getRowCount() - 1; i > -1; i--) {
+		    	modelIda.removeRow(i);
+		    }
+		}
+		if (modelVuelta.getRowCount() > 0) {
+		    for (int i = modelVuelta.getRowCount() - 1; i > -1; i--) {
+		    	modelVuelta.removeRow(i);
+		    }
+		}
 		tblIda.removeAll();
 		tblVuelta.removeAll();
 
@@ -267,7 +279,6 @@ public class TransportSupervisorGUI extends JPanel {
 			}
 		}
 
-		modelIda = new DefaultTableModel();
 		modelIda.setColumnIdentifiers(header);
 		for(List<String> actual:agentDataIda) {
 			modelIda.addRow((Vector<?>) actual);
@@ -275,7 +286,6 @@ public class TransportSupervisorGUI extends JPanel {
 		tblIda.setModel(modelIda);
 		tblIda.repaint();
 
-		modelVuelta = new DefaultTableModel();
 		modelVuelta.setColumnIdentifiers(header);
 		for(List<String> actual:agentDataVuelta) {
 			modelVuelta.addRow((Vector<?>) actual);

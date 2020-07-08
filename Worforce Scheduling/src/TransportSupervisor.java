@@ -720,6 +720,7 @@ public class TransportSupervisor extends Agent {
 			additionalKm = 0;
 			idealKm = 0;
 			indirectRoutes = 0;
+			N = 0;
 
 			for(Map.Entry<String, ArrayList<ArrayList<Integer>>> allVehiclesGoing: vehiclesGoing.entrySet()) {
 				ArrayList<ArrayList<Integer>> vehicles = allVehiclesGoing.getValue();
@@ -773,9 +774,11 @@ public class TransportSupervisor extends Agent {
 			ArrayList<ArrayList<Integer>> vehicles = vehiclesGoing.get(dayHour);
 			ArrayList<Integer> carro = null;
 			ArrayList<Integer> carroDelete = null;
+			ArrayList<Integer> absCar = null;
 			for(ArrayList<Integer> car: vehicles) {
 				for(Integer agents: car) {
 					if(agents == agent1 + 1) {
+						absCar = car;
 						if(car.size() == 1) {
 							System.out.println("The Agent " + (agent2 + 1) + " will travel alone.");
 							size = true;
@@ -792,6 +795,7 @@ public class TransportSupervisor extends Agent {
 			}
 
 			if(carroDelete == null && !size) {
+				absCar.remove((Integer) (agent1+1));
 				ArrayList<Integer> alone = new ArrayList<Integer>();
 				alone.add(agent2 + 1);
 				vehicles.add(alone);
@@ -813,9 +817,11 @@ public class TransportSupervisor extends Agent {
 			ArrayList<ArrayList<Integer>> vehicles = vehiclesReturn.get(dayHour);
 			ArrayList<Integer> carro = null;
 			ArrayList<Integer> carroDelete = null;
+			ArrayList<Integer> absCar = null;
 			for(ArrayList<Integer> car:vehicles) {
 				for(Integer agents: car) {
 					if(agents == agent1 + 1) {
+						absCar = car;
 						if(car.size() == 1) {
 							System.out.println("The Agent " + (agent2 + 1) + " will travel alone.");
 							size = true;
@@ -827,12 +833,12 @@ public class TransportSupervisor extends Agent {
 								break;
 							}
 						}
-
 					}
 				}
 			}
 
 			if(carroDelete == null && !size) {
+				absCar.remove((Integer) (agent1+1));
 				ArrayList<Integer> alone = new ArrayList<Integer>();
 				alone.add(agent2 + 1);
 				vehicles.add(alone);
