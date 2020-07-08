@@ -32,8 +32,8 @@ public class TransportSupervisor extends Agent {
 	private Double[][] distances;
 	private AID airline;
 	private AID[] agents;
-	private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesGoing = new HashMap<String, ArrayList<ArrayList<Integer>>>();
-	private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesReturn = new HashMap<String, ArrayList<ArrayList<Integer>>>();
+	private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesGoing;
+	private HashMap<String, ArrayList<ArrayList<Integer>>> vehiclesReturn;
 	private double FO = 0;
 	private double N = 0; //Employees that the airline transport
 	private double NRoutes = 0; //How many vehicles i have
@@ -197,32 +197,33 @@ public class TransportSupervisor extends Agent {
 					String hour = timeSolt.get(i)[j][0].split(" ")[1];
 					LocalTime hourLT = LocalTime.of(Integer.parseInt(hour.split(":")[0]), 
 							Integer.parseInt(hour.split(":")[1]));
-
-					if(needTransportForGoing(hourLT, perm)) {
-						if(ida.get(info) != null) {
-							agentsGoing = ida.get(info);
-							agentsGoing.add((i+1));
-							ida.put(info, agentsGoing);
-						}else {
-							agentsGoing = new ArrayList<Integer>();
-							agentsGoing.add(i + 1);
-							ida.put(info, agentsGoing);
+					if(!perm.equals("LLLL")) {
+						if(needTransportForGoing(hourLT, perm)) {
+							if(ida.get(info) != null) {
+								agentsGoing = ida.get(info);
+								agentsGoing.add((i+1));
+								ida.put(info, agentsGoing);
+							}else {
+								agentsGoing = new ArrayList<Integer>();
+								agentsGoing.add(i + 1);
+								ida.put(info, agentsGoing);
+							}
 						}
-					}
 
-					if(needTransportForReturn(hourLT, perm)) {
+						if(needTransportForReturn(hourLT, perm)) {
 
-						hourLT = hourLT.plusHours(9);
-						String newDay = day + " " + hourLT.toString();
+							hourLT = hourLT.plusHours(9);
+							String newDay = day + " " + hourLT.toString();
 
-						if(vuelta.get(newDay) != null) {
-							agentsReturn = vuelta.get(newDay);
-							agentsReturn.add((i+1));
-							vuelta.put(newDay, agentsReturn);
-						}else {
-							agentsReturn = new ArrayList<Integer>();
-							agentsReturn.add(i + 1);
-							vuelta.put(newDay, agentsReturn);
+							if(vuelta.get(newDay) != null) {
+								agentsReturn = vuelta.get(newDay);
+								agentsReturn.add((i+1));
+								vuelta.put(newDay, agentsReturn);
+							}else {
+								agentsReturn = new ArrayList<Integer>();
+								agentsReturn.add(i + 1);
+								vuelta.put(newDay, agentsReturn);
+							}
 						}
 					}
 				}
@@ -290,6 +291,8 @@ public class TransportSupervisor extends Agent {
 		public void action() {
 			switch (step) {
 			case 0:
+				vehiclesGoing = new HashMap<String, ArrayList<ArrayList<Integer>>>();
+				vehiclesReturn = new HashMap<String, ArrayList<ArrayList<Integer>>>();
 				//Generate leaders
 				leadersGoing = GenerateLeadersGoing();
 				leadersReturn = GenerateLeadersReturn();
@@ -431,7 +434,7 @@ public class TransportSupervisor extends Agent {
 			int numCars;
 			HashMap<String, ArrayList<Integer>> leaders = new HashMap<String, ArrayList<Integer>>();
 			for(Map.Entry<String, ArrayList<Integer>> actual:ida.entrySet()) {
-				numCars = (int) Math.ceil((double)actual.getValue().size()/3);
+				numCars = (int) Math.ceil((double)actual.getValue().size()/4);
 				ArrayList<Integer> ld = getLeaderGoing(actual.getValue(), numCars);
 				removeLeaders(actual.getKey(), ld, 1);
 				leaders.put(actual.getKey(), ld);
@@ -443,7 +446,7 @@ public class TransportSupervisor extends Agent {
 			int numCars;
 			HashMap<String, ArrayList<Integer>> leaders = new HashMap<String, ArrayList<Integer>>();
 			for(Map.Entry<String, ArrayList<Integer>> actual:vuelta.entrySet()) {
-				numCars = (int) Math.ceil((double)actual.getValue().size()/3); 
+				numCars = (int) Math.ceil((double)actual.getValue().size()/4); 
 				ArrayList<Integer> ld = getLeaderReturn(actual.getValue(), numCars);
 				removeLeaders(actual.getKey(), ld, 0);
 				leaders.put(actual.getKey(), ld);
@@ -544,6 +547,11 @@ public class TransportSupervisor extends Agent {
 							}
 						}	
 					}
+				}else {
+					System.out.println("El agente "+actual+" se ira solo y no se le envia mensaje");
+					ArrayList<ArrayList<Integer>> rec = new ArrayList<ArrayList<Integer>>();
+					rec.add(actual.getValue());
+					vehiclesGoing.put(actual.getKey(), rec);
 				}
 			}
 		}
@@ -590,6 +598,11 @@ public class TransportSupervisor extends Agent {
 							}
 						}	
 					}
+				}else {
+					System.out.println("El agente "+actual+" se ira solo y no se le envia mensaje");
+					ArrayList<ArrayList<Integer>> rec = new ArrayList<ArrayList<Integer>>();
+					rec.add(actual.getValue());
+					vehiclesReturn.put(actual.getKey(), rec);
 				}
 			}
 		}
@@ -722,6 +735,7 @@ public class TransportSupervisor extends Agent {
 							System.out.println("El agente " + (agent2 + 1) + "ahora se va solito");
 							car.set(0, agent2);
 						}else if(car.size() > 1) {
+							System.out.println("********Evaluare en que carro lo puedo poner********");
 							car.remove(agent1);
 							carro = VMCTemporal(car, agent2);
 							if(carro != null) {
@@ -796,11 +810,12 @@ public class TransportSupervisor extends Agent {
 			possibleCar.add(agent);
 			int leader = leaderG(possibleCar);
 			possibleCar.remove(leader);
+			System.out.println("********El lider es ******** "+leader);
 			response.add(leader);
 			double cercano;
 			int agentCercano;
 			double distance;
-			while(response.size()!= car.size()+1) {
+			while(response.size()!=car.size()+1) {
 				cercano = 100000;
 				agentCercano = -1;
 				for(Integer actual:possibleCar) {
@@ -814,6 +829,7 @@ public class TransportSupervisor extends Agent {
 			}
 			//Evaluar el promedio del nuevo agente
 			distance = calculateKmAgentGoing(agent, response);
+			System.out.println("********Distancia********"+distance+" - "+promAdditionalKm);
 			if(distance <= promAdditionalKm) {
 				return response;
 			}else {
@@ -827,6 +843,7 @@ public class TransportSupervisor extends Agent {
 			ArrayList<Integer> response = new ArrayList<Integer>();
 			possibleCar.add(agent);
 			int leader = leaderR(possibleCar);
+			System.out.println("********El lider es ******** "+leader);
 			possibleCar.remove(leader);
 			response.add(leader);
 			double cercano;
@@ -846,6 +863,7 @@ public class TransportSupervisor extends Agent {
 			}
 			//Evaluar el promedio del nuevo agente
 			distance = calculateKmAgentReturn(agent, response);
+			System.out.println("********Distancia********"+distance+" - "+promAdditionalKm);
 			if(distance <= promAdditionalKm) {
 				return response;
 			}else {
@@ -856,11 +874,11 @@ public class TransportSupervisor extends Agent {
 
 		public int leaderG(ArrayList<Integer> car){
 			int leader = -1;
-			double menor = 0;
+			double mayor = 0;
 			for(Integer actual:car) {
-				if(menor<distances[0][actual]) {
+				if(mayor<distances[0][actual]) {
 					leader = actual;
-					menor = distances[0][actual];
+					mayor = distances[0][actual];
 				}
 			}
 			return leader;

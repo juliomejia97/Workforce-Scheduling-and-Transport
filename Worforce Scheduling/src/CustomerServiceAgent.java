@@ -248,6 +248,9 @@ public class CustomerServiceAgent extends Agent{
 					dayHour = (String) content[0];
 					options = (ArrayList<Integer>) content[1];
 					expectedRepliesGoing.put(dayHour, options.size());
+					if(expectedRepliesGoing.get(dayHour)==0) {
+						System.out.println("Soy el unico en esta franja "+name);
+					}
 					searchAgents(dayHour, options);
 					sendProposals(dayHour);
 
@@ -328,6 +331,9 @@ public class CustomerServiceAgent extends Agent{
 					dayHour = (String) content[0];
 					options = (ArrayList<Integer>) content[1];
 					expectedRepliesReturn.put(dayHour, options.size());
+					if(expectedRepliesReturn.get(dayHour)==0) {
+						System.out.println("Soy el unico en esta franja "+name);
+					}
 					searchAgents(dayHour, options);
 					sendProposals(dayHour);
 
