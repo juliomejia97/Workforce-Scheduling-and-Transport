@@ -850,7 +850,9 @@ public class CustomerServiceSupervisor extends Agent{
 				for(int i=0; i < serviceAgents.length; i++) {
 					sendDecision(serviceAgents[i]);
 				}
-				step = 5;
+				step = 0;
+				mt =MessageTemplate.and(MessageTemplate.MatchConversationId("peak-demand"),
+						MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
 				break;
 			default:
 				block();
@@ -1147,7 +1149,9 @@ public class CustomerServiceSupervisor extends Agent{
 					sendDecision(serviceAgents[i]);
 				}
 				newAgents.clear();
-				step = 6;
+				step = 0;
+				mt =MessageTemplate.and(MessageTemplate.MatchConversationId("agents-absences"),
+						MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
 				break;
 			default:
 				break;

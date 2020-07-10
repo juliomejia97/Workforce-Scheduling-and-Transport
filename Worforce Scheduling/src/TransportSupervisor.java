@@ -699,7 +699,9 @@ public class TransportSupervisor extends Agent {
 
 			case 2:
 				updateFO();
-				step = 3;
+				mt =MessageTemplate.and(MessageTemplate.MatchConversationId("route-absense"),
+						MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
+				step = 0;
 				break;
 
 			default:
@@ -796,7 +798,7 @@ public class TransportSupervisor extends Agent {
 			}
 
 			//Remove absent agent
-			if(!size) {
+			if(!size&&absCar!=null) {
 				absCar.remove((Integer) (agent1+1));
 			}
 
@@ -845,7 +847,7 @@ public class TransportSupervisor extends Agent {
 			}
 
 			//Remove absent agent
-			if(!size) {
+			if(!size && absCar!=null) {
 				absCar.remove((Integer) (agent1+1));
 			}
 
