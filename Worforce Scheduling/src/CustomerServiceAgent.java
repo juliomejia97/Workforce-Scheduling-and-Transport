@@ -967,6 +967,11 @@ public class CustomerServiceAgent extends Agent{
 							reply.setConversationId("change-activity");
 							myAgent.send(reply);
 						}
+					}else {
+						ACLMessage reply = msg.createReply();
+						reply.setPerformative(ACLMessage.REFUSE);
+						reply.setConversationId("change-activity");
+						myAgent.send(reply);
 					}
 				} catch (UnreadableException e) {
 					e.printStackTrace();
